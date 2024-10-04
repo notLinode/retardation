@@ -1,8 +1,8 @@
 import openai
 
-def get_response(prompt: str) -> str:
+def get_response(akash_api_key: str, prompt: str) -> str:
     client = openai.OpenAI(
-        api_key="api key",
+        api_key=akash_api_key,
         base_url="https://chatapi.akash.network/api/v1"
     )
 
