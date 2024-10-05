@@ -106,9 +106,10 @@ async def on_message(message: discord.Message):
     recent_messages.append(message.content)
 
     is_mentioned: bool = client.user in message.mentions
+    is_mentioned_directly: bool = "инвалид" in message.content
     is_time_to_automessage: bool = len(recent_messages) >= setting_message_interval
 
-    if is_mentioned or is_time_to_automessage:
+    if is_mentioned or is_mentioned_directly or is_time_to_automessage:
         async with message.channel.typing():
             automessage: str = ai.generate_automessage(AKASH_API_KEY, recent_messages, stylized_bot_messages)
             await message.channel.send(automessage)
