@@ -1,11 +1,11 @@
 import discord
-import get_ai_response as ai
+import src.get_ai_response as ai
 
 # Retrieve sensitive information from an unlisted file
 TOKEN: str
 AKASH_API_KEY: str
 
-with open("tokens.txt", "r") as file:
+with open("../tokens.txt", "r") as file:
     temp = file.read().splitlines()
     TOKEN = temp[0]
     AKASH_API_KEY = temp[1]
