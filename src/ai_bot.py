@@ -127,7 +127,7 @@ async def on_message(message: discord.Message):
     recent_messages.append(message.content)
 
     is_mentioned: bool = client.user in message.mentions
-    is_mentioned_directly: bool = "инвалид" in message.content
+    is_mentioned_directly: bool = "инвалид" in message.content.lower()
 
     if setting_message_interval_is_random:
         is_time_to_automessage: bool = message_interval_random <= 0
