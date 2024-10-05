@@ -1,5 +1,5 @@
 import discord
-import get_ai_response as ai
+import src.get_ai_response as ai
 
 # Retrieve sensitive information from an unlisted file
 TOKEN: str
