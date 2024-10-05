@@ -1,5 +1,6 @@
 import discord
 import get_ai_response as ai
+import random
 
 # Retrieve sensitive information from an unlisted file
 TOKEN: str
@@ -20,7 +21,9 @@ client = discord.Client(intents=intents)
 #Declare global variables and constants
 SETTING_MESSAGE_INTERVAL_MIN: int = 1
 SETTING_MESSAGE_INTERVAL_MAX: int = 25
-setting_message_interval: int = 10
+setting_message_interval: int = 7
+setting_message_interval_is_random: bool = False
+message_interval_random: int = 4
 
 SETTING_OWN_MESSAGE_MEMORY_MIN: int = 1
 SETTING_OWN_MESSAGE_MEMORY_MAX: int = 10
@@ -38,6 +41,8 @@ async def on_ready():
 async def on_message(message: discord.Message):
     global recent_messages
     global stylized_bot_messages
+    global setting_message_interval_is_random
+    global message_interval_random
 
     if message.author == client.user:
         return
@@ -55,7 +60,20 @@ async def on_message(message: discord.Message):
     
     if message.content.startswith(";set-message-interval"):
         async with message.channel.typing():
-            interval: int = int(message.content[22:])
+            interval_str: str = message.content[22:].lower()
+            
+            if not interval_str.isnumeric() and interval_str != "random":
+                await message.channel.send(f":prohibited: Неправильное значение интервала между сообщениями бота. Значение должно быть либо числом от `{SETTING_MESSAGE_INTERVAL_MIN}` до `{SETTING_MESSAGE_INTERVAL_MAX}`, либо `random`.")
+                return
+
+            if interval_str == "random":
+                setting_message_interval_is_random = True
+                message_interval_random = int(random.random() * 10) + 1
+
+                await message.channel.send(f":white_check_mark: Интервал между сообщениями бота будет случайным для каждого сообщения.")
+                return
+            
+            interval: int = int(interval_str)
 
             if interval < SETTING_MESSAGE_INTERVAL_MIN or interval > SETTING_MESSAGE_INTERVAL_MAX:
                 await message.channel.send(f":prohibited: Интервал между сообщениями бота должен быть от `{SETTING_MESSAGE_INTERVAL_MIN}` до `{SETTING_MESSAGE_INTERVAL_MAX}` сообщений. Вы попытались установить: `{interval}`.")
@@ -63,6 +81,8 @@ async def on_message(message: discord.Message):
 
             global setting_message_interval
             setting_message_interval = interval
+            setting_message_interval_is_random = False
+            
             await message.channel.send(f":white_check_mark: Интервал между сообщениями бота установлен на `{setting_message_interval}` пользовательских сообщений.")
         return
     
@@ -76,6 +96,7 @@ async def on_message(message: discord.Message):
 
             global setting_own_message_memory
             setting_own_message_memory = memory
+
             await message.channel.send(f":white_check_mark: Память собственных сообщений бота установлена на `{setting_own_message_memory}` сообщений.")
         return
     
@@ -94,7 +115,7 @@ async def on_message(message: discord.Message):
         async with message.channel.typing():
             help_msg: str = "```"
             help_msg += "\n;prompt [Сообщение: str] - обратиться к Llama 3.1 405B.\n"
-            help_msg += "\n;set-message-interval [Интервал: int] - поставить количество пользовательских сообщений, после которого бот сам что-то напишет.\n"
+            help_msg += "\n;set-message-interval [Интервал: int | random] - поставить количество пользовательских сообщений, после которого бот сам что-то напишет.\n"
             help_msg += "\n;set-own-message-memory [Память: int] - поставить количество собственных сообщений бота, которые он запомнит и учтёт при написании следующего своего сообщения.\n"
             help_msg += "\n;clear-memory - Очищает память бота от своих и пользовательских сообщений.\n"
             help_msg += "\n;ping - pong.\n"
@@ -107,7 +128,12 @@ async def on_message(message: discord.Message):
 
     is_mentioned: bool = client.user in message.mentions
     is_mentioned_directly: bool = "инвалид" in message.content
-    is_time_to_automessage: bool = len(recent_messages) >= setting_message_interval
+
+    if setting_message_interval_is_random:
+        is_time_to_automessage: bool = message_interval_random <= 0
+        message_interval_random = int(random.random() * 10) + 1 if is_time_to_automessage else message_interval_random - 1
+    else:
+        is_time_to_automessage: bool = len(recent_messages) >= setting_message_interval
 
     if is_mentioned or is_mentioned_directly or is_time_to_automessage:
         async with message.channel.typing():
