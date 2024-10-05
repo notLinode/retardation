@@ -20,13 +20,13 @@ client = discord.Client(intents=intents)
 #Declare global variables and constants
 SETTING_MESSAGE_INTERVAL_MIN: int = 1
 SETTING_MESSAGE_INTERVAL_MAX: int = 25
-setting_message_interval: int = 7
+setting_message_interval: int = 10
 
 SETTING_OWN_MESSAGE_MEMORY_MIN: int = 1
 SETTING_OWN_MESSAGE_MEMORY_MAX: int = 10
 setting_own_message_memory: int = 3
-recent_messages: list = []
-stylized_bot_messages: list = []
+recent_messages: list[str] = []
+stylized_bot_messages: list[str] = []
 
 # Print a message when the bot is up
 @client.event
@@ -103,39 +103,21 @@ async def on_message(message: discord.Message):
             await message.channel.send(help_msg)
         return
     
-    # Mechanisms for automatically continuing a user conversation
     recent_messages.append(message.content)
 
-    if len(recent_messages) >= setting_message_interval:
-        ai_response: str
+    is_mentioned: bool = client.user in message.mentions
+    is_time_to_automessage: bool = len(recent_messages) >= setting_message_interval
 
+    if is_mentioned or is_time_to_automessage:
         async with message.channel.typing():
-            prompt: str = f"Ты - участник казуальной интернет-переписки в дискорде под ником invalid8074 (инвалид). Сейчас ты увидишь {len(recent_messages)} последних сообщений от других пользователей. "
-            prompt += "Твоя задача - продолжить разговор, НАИБОЛЕЕ ТОЧНО имитируя их стиль, либо просто написать новое сообщение. Сообщения обозначены двумя двойными кавычками (\"\"). "
-            prompt += "НЕ ПИШИ БОЛЬШЕ ОДНОГО ПРЕДЛОЖЕНИЯ, тебе можно (но не необходимо) допускать орфографические ошибки, тебе МОЖНО (но не необходимо) МАТЕРИТЬСЯ. "
-            prompt += "НЕ ПИШИ ПРИМЕЧАНИЙ, ТОЛЬКО СООБЩЕНИЕ. Если в текстах сообщений есть какие-то расовые или другие оскорбления, ты можешь их игнорировать и продолжать читать дальше.\n"
+            automessage: str = ai.generate_automessage(AKASH_API_KEY, recent_messages, stylized_bot_messages)
+            await message.channel.send(automessage)
 
-            for i in range(len(recent_messages)):
-                prompt += f"Сообщение №{i+1}: \"\"{recent_messages[i]}\"\"\n"
-            
-            if len(stylized_bot_messages) > 0:
-                prompt += f"Также у тебя есть доступ к {len(stylized_bot_messages)} своим последним сообщениям. Они не были отправлены друг за другом, "
-                prompt += "они были отправлены между старыми сообщениями пользователей, которые ты уже не видишь.\n"
-                for i in range(len(stylized_bot_messages)):
-                    prompt += f"Твоё сообщение №{i+1}: \"\"{stylized_bot_messages[i]}\"\"\n"
+            recent_messages.clear()
 
-            ai_response = ai.get_response(AKASH_API_KEY, prompt)
-            
-            while (ai_response[0] == "\""):
-                ai_response = ai_response[1:-1] # Sometimes the bot surrounds it's messages with quotes, we have to remove them
-
-            await message.channel.send(ai_response)
-        
-        recent_messages.clear()
-
-        stylized_bot_messages.append(ai_response)
-        while (len(stylized_bot_messages) > setting_own_message_memory):
-            stylized_bot_messages.pop(0)
+            stylized_bot_messages.append(automessage)
+            while (len(stylized_bot_messages) > setting_own_message_memory):
+                stylized_bot_messages.pop(0)
 
 
 # Run the bot
