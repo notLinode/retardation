@@ -1,6 +1,7 @@
 import discord
 import get_ai_response as ai
 import random
+import re
 
 # Retrieve sensitive information from an unlisted file
 TOKEN: str
@@ -22,13 +23,13 @@ client = discord.Client(intents=intents)
 SETTING_MESSAGE_INTERVAL_MIN: int = 1
 SETTING_MESSAGE_INTERVAL_MAX: int = 25
 setting_message_interval: int = 7
-setting_message_interval_is_random: bool = False
+setting_message_interval_is_random: bool = True
 message_interval_random: int = 4
 
 SETTING_OWN_MESSAGE_MEMORY_MIN: int = 1
 SETTING_OWN_MESSAGE_MEMORY_MAX: int = 10
 setting_own_message_memory: int = 3
-recent_messages: list[str] = []
+recent_messages: list[discord.Message] = []
 stylized_bot_messages: list[str] = []
 
 # Print a message when the bot is up
@@ -124,10 +125,10 @@ async def on_message(message: discord.Message):
             await message.channel.send(help_msg)
         return
     
-    recent_messages.append(message.content)
+    recent_messages.append(message)
 
     is_mentioned: bool = client.user in message.mentions
-    is_mentioned_directly: bool = "инвалид" in message.content.lower()
+    is_mentioned_directly: bool =  re.search("(?:\s|^)инвалид", message.content.lower()) is not None
 
     if setting_message_interval_is_random:
         is_time_to_automessage: bool = message_interval_random <= 0
