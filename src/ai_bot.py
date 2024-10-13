@@ -109,6 +109,9 @@ async def on_message(message: discord.Message):
 
         case ";status":
             await commands.status(message, bot_vars)
+
+        case ";tokens" | ";tok":
+            await commands.tokens(message, bot_vars)
         
         case ";ping":
             await message.channel.send('pong')

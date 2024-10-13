@@ -108,8 +108,6 @@ async def clean_litter(message: Message, bot_vars: BotVariables) -> None:
         else:
             await message.channel.send("лоток уже чист....")
 
-        
-
 async def status(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         bot_status: str = f":heart: Здоровье: `{int(bot_vars.health)}`\n"
@@ -118,6 +116,10 @@ async def status(message: Message, bot_vars: BotVariables) -> None:
         bot_status += f":coin: Ваши токены взаимодействия: `{bot_vars.user_interaction_tokens[message.author.id][0]}`"
 
         await message.channel.send(bot_status)
+
+async def tokens(message: Message, bot_vars: BotVariables) -> None:
+    async with message.channel.typing():
+        await message.channel.send(f":coin: Ваши токены взаимодействия: `{bot_vars.user_interaction_tokens[message.author.id][0]}`")
 
 async def help(message: Message) -> None:
     async with message.channel.typing():
@@ -129,6 +131,7 @@ async def help(message: Message) -> None:
         help_msg += "\n;ping - pong.\n"
         help_msg += "\n------====* КОМАНДЫ УХОДА ЗА БОТОМ *====------\n"
         help_msg += "\n;status - Показывает состояние бота и количество ваших токенов.\n"
+        help_msg += "\n;tokens - Показывает количество ваших токенов.\n"
         help_msg += "\n;feed [Еда: str] - Кормит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
         help_msg += "\n;heal [Лекарство: str] - Лечит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
         help_msg += "\n;clean-litter - Очищает лоток бота. Тратит 1 токен при использовании.\n"
