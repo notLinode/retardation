@@ -28,14 +28,9 @@ client = discord.Client(intents=intents)
 # Declare global variables and constants
 bot_vars = BotVariables()
 
-# Create hunger routine
+# Create custom routines
 async def hunger_task(): # TODO: add dying on 0 health and reviving the bot with a 5️⃣ reaction
     while True:
-        presence: str = f"{'❤️' if int(bot_vars.health) > 10 else '💔'} {int(bot_vars.health)} "
-        presence += f"{'🍖' if int(bot_vars.satiety) > 50 else '🦴'} {int(bot_vars.satiety)} "
-        presence += f"💩 {bot_vars.litter_box_fullness}"
-        await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=presence))
-
         bot_vars.litter_box_timer -= 1
 
         if bot_vars.litter_box_timer == 0:
@@ -58,11 +53,21 @@ async def hunger_task(): # TODO: add dying on 0 health and reviving the bot with
 
         await asyncio.sleep(60.0)
 
+async def presence_task():
+    while True:
+        presence: str = f"{'❤️' if int(bot_vars.health) > 10 else '💔'} {int(bot_vars.health)} "
+        presence += f"{'🍖' if int(bot_vars.satiety) > 50 else '🦴'} {int(bot_vars.satiety)} "
+        presence += f"💩 {bot_vars.litter_box_fullness}"
+        await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=presence))
+
+        await asyncio.sleep(10.0)
+
 # Print a message when the bot is up
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
     client.loop.create_task(hunger_task())
+    client.loop.create_task(presence_task())
 
 # Declare commands
 @client.event
