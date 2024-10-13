@@ -15,3 +15,10 @@ class BotVariables:
 
     recent_messages: list[Message] = field(default_factory=list[Message])
     stylized_bot_messages: list[str] = field(default_factory=list[str])
+
+    satiety: float = 100.0
+    health: float = 100.0
+    litter_box_fullness: int = 0
+    litter_box_timer: int = 60
+
+    user_interaction_tokens: dict[int, list[int]] = field(default_factory=dict[int, list[int]]) # key - userid, list[0] - tokens (max 3), list[1] - messages until next token

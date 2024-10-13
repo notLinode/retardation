@@ -59,6 +59,66 @@ async def clear_memory(message: Message, bot_vars: BotVariables) -> None:
         bot_vars.stylized_bot_messages.clear()
         await message.channel.send(f":white_check_mark: я всё заббыл нахуй")
 
+async def feed(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
+    async with message.channel.typing():
+        if bot_vars.user_interaction_tokens[message.author.id][0] <= 0:
+            await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 10 сообщений.")
+            return
+        bot_vars.user_interaction_tokens[message.author.id][0] -= 1
+        
+        food_item: str = message.content[6:]
+        food_satiety: int = ai.generate_food_satiety(AKASH_API_KEY, food_item)
+        bot_vars.satiety += float(food_satiety)
+        
+        if bot_vars.satiety >= 200.0:
+            bot_vars.satiety = 200.0
+        elif bot_vars.satiety <= 0:
+            bot_vars.satiety = 0
+
+        await message.channel.send(f"вау мне дали **{food_item}** и я {'получил' if food_satiety >= 0 else 'потерял'} `{abs(food_satiety)}` сытости {':drooling_face::drooling_face:' if food_satiety >= 40 else ''}")
+
+async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
+    async with message.channel.typing():
+        if bot_vars.user_interaction_tokens[message.author.id][0] <= 0:
+            await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 10 сообщений.")
+            return
+        bot_vars.user_interaction_tokens[message.author.id][0] -= 1
+
+        item: str = message.content[6:]
+        item_health: int = ai.generate_item_health(AKASH_API_KEY, item)
+        bot_vars.health += float(item_health)
+        
+        if bot_vars.health >= 100.0:
+            bot_vars.health = 100.0
+        elif bot_vars.health <= 0:
+            bot_vars.health = 0
+
+        await message.channel.send(f"меня подлечили с помощью **{item}** и я {'получил' if item_health >= 0 else 'нахуй потерял'} `{abs(item_health)}` здоровья {':heart:' if item_health >= 0 else ':broken_heart::broken_heart::broken_heart:'}")
+
+async def clean_litter(message: Message, bot_vars: BotVariables) -> None:
+    async with message.channel.typing():
+        if bot_vars.user_interaction_tokens[message.author.id][0] <= 0:
+            await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 10 сообщений.")
+            return
+        bot_vars.user_interaction_tokens[message.author.id][0] -= 1
+        
+        if bot_vars.litter_box_fullness > 0:
+            bot_vars.litter_box_fullness = 0
+            await message.channel.send(f"лоток очищен :white_check_mark:")
+        else:
+            await message.channel.send("лоток уже чист....")
+
+        
+
+async def status(message: Message, bot_vars: BotVariables) -> None:
+    async with message.channel.typing():
+        bot_status: str = f":heart: Здоровье: `{int(bot_vars.health)}`\n"
+        bot_status += f":meat_on_bone: Сытость: `{int(bot_vars.satiety)}`\n"
+        bot_status += f":poop: Наполненность лотка: `{bot_vars.litter_box_fullness}`\n\n"
+        bot_status += f":coin: Ваши токены взаимодействия: `{bot_vars.user_interaction_tokens[message.author.id][0]}`"
+
+        await message.channel.send(bot_status)
+
 async def help(message: Message) -> None:
     async with message.channel.typing():
         help_msg: str = "```"
@@ -67,6 +127,11 @@ async def help(message: Message) -> None:
         help_msg += "\n;set-own-message-memory [Память: int] - поставить количество собственных сообщений бота, которые он запомнит и учтёт при написании следующего своего сообщения.\n"
         help_msg += "\n;clear-memory - Очищает память бота от своих и пользовательских сообщений.\n"
         help_msg += "\n;ping - pong.\n"
+        help_msg += "\n------====* КОМАНДЫ УХОДА ЗА БОТОМ *====------\n"
+        help_msg += "\n;status - Показывает состояние бота и количество ваших токенов.\n"
+        help_msg += "\n;feed [Еда: str] - Кормит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
+        help_msg += "\n;heal [Лекарство: str] - Лечит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
+        help_msg += "\n;clean-litter - Очищает лоток бота. Тратит 1 токен при использовании.\n"
         help_msg += "```"
 
         await message.channel.send(help_msg)
