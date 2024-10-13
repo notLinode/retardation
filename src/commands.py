@@ -62,7 +62,7 @@ async def clear_memory(message: Message, bot_vars: BotVariables) -> None:
 async def feed(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         if bot_vars.user_interaction_tokens[message.author.id][0] <= 0:
-            await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 10 сообщений.")
+            await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 5 сообщений.")
             return
         bot_vars.user_interaction_tokens[message.author.id][0] -= 1
         
@@ -80,7 +80,7 @@ async def feed(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
 async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         if bot_vars.user_interaction_tokens[message.author.id][0] <= 0:
-            await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 10 сообщений.")
+            await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 5 сообщений.")
             return
         bot_vars.user_interaction_tokens[message.author.id][0] -= 1
 
@@ -98,7 +98,7 @@ async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
 async def clean_litter(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         if bot_vars.user_interaction_tokens[message.author.id][0] <= 0:
-            await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 10 сообщений.")
+            await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 5 сообщений.")
             return
         bot_vars.user_interaction_tokens[message.author.id][0] -= 1
         

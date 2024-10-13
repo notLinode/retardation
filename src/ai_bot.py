@@ -68,10 +68,10 @@ async def on_message(message: discord.Message):
         return
     
     if message.author.id not in bot_vars.user_interaction_tokens:
-            bot_vars.user_interaction_tokens[message.author.id] = [3, 10]
+            bot_vars.user_interaction_tokens[message.author.id] = [3, 5]
     
     if bot_vars.user_interaction_tokens[message.author.id][1] <= 0:
-        bot_vars.user_interaction_tokens[message.author.id][1] = 10
+        bot_vars.user_interaction_tokens[message.author.id][1] = 5
         bot_vars.user_interaction_tokens[message.author.id][0] += 1 if bot_vars.user_interaction_tokens[message.author.id][0] < 3 else 0
         await message.add_reaction("🪙")
     else:
