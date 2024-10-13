@@ -31,6 +31,11 @@ bot_vars = BotVariables()
 # Create hunger routine
 async def hunger_task(): # TODO: add dying on 0 health and reviving the bot with a 5️⃣ reaction
     while True:
+        presence: str = f"{':heart:' if int(bot_vars.health) > 10 else ':broken_heart:'} {int(bot_vars.health)} "
+        presense += f"{':meat_on_bone:' if int(bot_vars.satiety) > 50 else ':bone:'} {int(bot_vars.satiety)} "
+        presence += f":poop: {bot_vars.litter_box_fullness}"
+        await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=presence))
+
         bot_vars.litter_box_timer -= 1
 
         if bot_vars.litter_box_timer == 0:
