@@ -79,8 +79,9 @@ async def on_message(message: discord.Message):
     
     if bot_vars.user_interaction_tokens[message.author.id][1] <= 0:
         bot_vars.user_interaction_tokens[message.author.id][1] = 5
-        bot_vars.user_interaction_tokens[message.author.id][0] += 1 if bot_vars.user_interaction_tokens[message.author.id][0] < 3 else 0
-        await message.add_reaction("🪙")
+        if bot_vars.user_interaction_tokens[message.author.id][0] < 3:
+            bot_vars.user_interaction_tokens[message.author.id][0] += 1
+            await message.add_reaction("🪙")
     else:
         bot_vars.user_interaction_tokens[message.author.id][1] -= 1
     
