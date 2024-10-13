@@ -45,9 +45,6 @@ async def hunger_task(): # TODO: add dying on 0 health and reviving the bot with
             bot_vars.health -= 1
         elif bot_vars.satiety > 0:
             bot_vars.satiety -= 0.2 # -1 satiety every 5 minutes
-            
-            if bot_vars.satiety in [10.0, 20.0, 30.0]:
-                await client.get_channel(1275173364574720121).send(f":bone: у меня осталось {int(bot_vars.satiety)} сытости и я голодный")
         else:
             bot_vars.health -= 1
 
