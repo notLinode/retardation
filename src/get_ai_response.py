@@ -17,8 +17,6 @@ def get_response(akash_api_key: str, prompt: str) -> str:
         ],
     )
 
-    #print(response.choices[0].message.content)
-
     return response.choices[0].message.content
 
 def generate_automessage(akash_api_key: str, recent_messages: list[Message], stylized_bot_messages: list[str]) -> str:
