@@ -62,6 +62,7 @@ async def presence_task():
 async def update_shop_task():
     while True:
         bot_vars.shop_items = ai.generate_shop_items(AKASH_API_KEY)
+        bot_vars.shop_items_next_update_time = int(time.time()) + 3600
         await asyncio.sleep(3600.0)
 
 # Print a message when the bot is up

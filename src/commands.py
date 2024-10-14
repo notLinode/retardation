@@ -69,12 +69,7 @@ async def feed(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
         
         food_item: str = message.content[6:]
         food_satiety: int = ai.generate_food_satiety(AKASH_API_KEY, food_item)
-        bot_vars.satiety += float(food_satiety)
-        
-        if bot_vars.satiety >= 200.0:
-            bot_vars.satiety = 200.0
-        elif bot_vars.satiety <= 0:
-            bot_vars.satiety = 0
+        bot_vars.add_satiety(float(food_satiety))
 
         await message.channel.send(f"вау мне дали **{food_item}** и я {'получил' if food_satiety >= 0 else 'потерял'} `{abs(food_satiety)}` сытости {':drooling_face::drooling_face:' if food_satiety >= 40 else ''}")
 
@@ -87,12 +82,7 @@ async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
 
         item: str = message.content[6:]
         item_health: int = ai.generate_item_health(AKASH_API_KEY, item)
-        bot_vars.health += float(item_health)
-        
-        if bot_vars.health >= 100.0:
-            bot_vars.health = 100.0
-        elif bot_vars.health <= 0:
-            bot_vars.health = 0
+        bot_vars.add_health(float(item_health))
 
         await message.channel.send(f"меня подлечили с помощью **{item}** и я {'получил' if item_health >= 0 else 'нахуй потерял'} `{abs(item_health)}` здоровья {':heart:' if item_health >= 0 else ':broken_heart::broken_heart::broken_heart:'}")
 
@@ -140,17 +130,8 @@ async def buy(message: Message, bot_vars: BotVariables) -> None:
         bot_vars.user_interaction_tokens[message.author.id][0] -= item.cost
         item.is_bought = True
 
-        bot_vars.health += item.health
-        if bot_vars.health >= 100.0:
-            bot_vars.health = 100.0
-        elif bot_vars.health <= 0:
-            bot_vars.health = 0
-
-        bot_vars.satiety += item.satiety
-        if bot_vars.satiety >= 200.0:
-            bot_vars.satiety = 200.0
-        elif bot_vars.satiety <= 0:
-            bot_vars.satiety = 0
+        bot_vars.add_health(item.health)
+        bot_vars.add_satiety(item.satiety)
 
         msg: str = ""
         if item.satiety < 0 and item.health < 0:
