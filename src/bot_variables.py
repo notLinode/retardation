@@ -51,6 +51,6 @@ class BotVariables:
         for i in range(len(self.shop_items)):
             s += f"{i}. {self.shop_items[i]}\n"
 
-        s += f"\n⏳ До обновления магазина `{self.shop_items_next_update_time - time.time() // 60}` минут."
+        s += f"\n⏳ До обновления магазина `{(self.shop_items_next_update_time - time.time()) // 60}` минут."
 
         return s
