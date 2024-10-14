@@ -1,6 +1,7 @@
 from discord import Message
 
 import random
+import time
 
 import get_ai_response as ai
 from bot_variables import *
@@ -97,16 +98,71 @@ async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
 
 async def clean_litter(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
-        if bot_vars.user_interaction_tokens[message.author.id][0] <= 0:
-            await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 6 сообщений.")
-            return
-        bot_vars.user_interaction_tokens[message.author.id][0] -= 1
-        
         if bot_vars.litter_box_fullness > 0:
             bot_vars.litter_box_fullness = 0
-            await message.channel.send(f"лоток очищен :white_check_mark:")
-        else:
+            bonus_tokens: int = bot_vars.litter_box_fullness // 10
+            bot_vars.user_interaction_tokens[message.author.id][0] += bonus_tokens
+            await message.channel.send(f"лоток очищен :white_check_mark:\nВы получили `{bonus_tokens} 🪙`")
+        else:   
             await message.channel.send("лоток уже чист....")
+
+async def shop(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
+    async with message.channel.typing():
+        if not bot_vars.get_shop_items_str():
+            bot_vars.shop_items = ai.generate_shop_items(AKASH_API_KEY)
+            
+        await message.channel.send(bot_vars.get_shop_items_str())
+
+async def buy(message: Message, bot_vars: BotVariables) -> None:
+    async with message.channel.typing():
+        item_idx_str: str = message.content[5:]
+
+        if not item_idx_str.isnumeric():
+            await message.channel.send(":prohibited: вы даун")
+            return
+        
+        item_idx: int = int(item_idx_str) - 1
+
+        if item_idx < 0 or item_idx >= len(bot_vars.shop_items):
+            await message.channel.send(":prohibited: В магазине нет вещи под таким номером.")
+            return
+
+        item: ShopItem = bot_vars.shop_items[item_idx]
+        
+        if item.is_bought:
+            await message.channel.send(f":prohibited: Эта вещь уже куплена, подождите обновления магазина.")
+            return
+        
+        if bot_vars.user_interaction_tokens[message.author.id][0] <= item.cost:
+            await message.channel.send(f":prohibited: У вас недостаточно токенов взаимодействия (у вас `{bot_vars.user_interaction_tokens[message.author.id][0]}`). Они выдаются каждые 6 сообщений.")
+            return
+        
+        bot_vars.user_interaction_tokens[message.author.id][0] -= item.cost
+        item.is_bought = True
+
+        bot_vars.health += item.health
+        if bot_vars.health >= 100.0:
+            bot_vars.health = 100.0
+        elif bot_vars.health <= 0:
+            bot_vars.health = 0
+
+        bot_vars.satiety += item.satiety
+        if bot_vars.satiety >= 200.0:
+            bot_vars.satiety = 200.0
+        elif bot_vars.satiety <= 0:
+            bot_vars.satiety = 0
+
+        msg: str = ""
+        if item.satiety < 0 and item.health < 0:
+            msg = f"блять мне скормили **{item.name}** и я нахуй потерял `{abs(item.satiety)}` сытости и `{abs(item.health)}` здоровья 💔💔"
+        elif item.satiety >= 0 and item.health < 0:
+            msg = f"мне дали **{item.name}** и я получил `{item.satiety}` сытости потеряв `{abs(item.health)}` здоровья {':drool:' if item.satiety >= 40 else ''}"
+        elif item.satiety < 0 and item.health >= 0:
+            msg = f"мне дали **{item.name}** и я получил `{item.health}` здоровья потеряв `{abs(item.satiety)}` сытости :heart:"
+        else:
+            msg = f"вау мне скормили **{item.name}** и я получил `{item.satiety}` сытости и `{item.health}` здоровья :drool::drool::heart:"
+
+        await message.channel.send(msg)
 
 async def status(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
@@ -132,9 +188,34 @@ async def help(message: Message) -> None:
         help_msg += "\n------====* КОМАНДЫ УХОДА ЗА БОТОМ *====------\n"
         help_msg += "\n;status - Показывает состояние бота и количество ваших токенов.\n"
         help_msg += "\n;tokens - Показывает количество ваших токенов.\n"
+        help_msg += "\n;shop - Показывает магазин. Магазин обновляется каждый час.\n"
+        help_msg += "\n;buy [Номер: int] - Покупает вещь из магазина и даёт её боту.\n"
         help_msg += "\n;feed [Еда: str] - Кормит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
         help_msg += "\n;heal [Лекарство: str] - Лечит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
         help_msg += "\n;clean-litter - Очищает лоток бота. Тратит 1 токен при использовании.\n"
         help_msg += "```"
 
         await message.channel.send(help_msg)
+
+async def process_tokens_info(message: Message, bot_vars: BotVariables) -> None:
+    userid: int = message.author.id
+
+    if userid not in bot_vars.user_interaction_tokens:
+            bot_vars.user_interaction_tokens[userid] = [3, 5, int(time.time())]
+    
+    if userid == "1292148664147513490": # If author is megainvalid
+        return
+
+    if bot_vars.user_interaction_tokens[userid][1] <= 0:
+        bot_vars.user_interaction_tokens[userid][1] = 5
+        bot_vars.user_interaction_tokens[userid][0] += 1
+        await message.add_reaction("🪙")
+    else:
+        bot_vars.user_interaction_tokens[userid][1] -= 1
+
+    time_since_last_message: int = int(time.time()) - bot_vars.user_interaction_tokens[userid][2]
+    if time_since_last_message >= 3600:
+        bot_vars.user_interaction_tokens[userid][0] += min(3, time_since_last_message // 3600) # Can't earn more than 3 tokens by idling
+        await message.add_reaction("🪙")
+    
+    bot_vars.user_interaction_tokens[userid][2] = int(time.time())

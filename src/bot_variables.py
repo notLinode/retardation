@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from discord import Message
+from shop_item import *
 
 @dataclass
 class BotVariables:
@@ -21,4 +22,17 @@ class BotVariables:
     litter_box_fullness: int = 0
     litter_box_timer: int = 60
 
-    user_interaction_tokens: dict[int, list[int]] = field(default_factory=dict[int, list[int]]) # key - userid, list[0] - tokens (max 3), list[1] - messages until next token
+    user_interaction_tokens: dict[int, list[int]] = field(default_factory=dict[int, list[int]]) # key - userid;
+                                                                                                # list[0] - tokens (max 3);
+                                                                                                # list[1] - messages until next token;
+                                                                                                # list[2] - time of last message
+
+    shop_items: list[ShopItem] = field(default_factory=list[ShopItem])
+
+    def get_shop_items_str(self) -> str:
+        s = ""
+
+        for i in range(len(self.shop_items)):
+            s += f"{i}. {self.shop_items[i]}\n"
+
+        return s

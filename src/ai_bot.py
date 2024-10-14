@@ -59,12 +59,18 @@ async def presence_task():
 
         await asyncio.sleep(10.0)
 
+async def update_shop_task():
+    while True:
+        bot_vars.shop_items = ai.generate_shop_items(AKASH_API_KEY)
+        await asyncio.sleep(3600.0)
+
 # Print a message when the bot is up
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
     client.loop.create_task(hunger_task())
     client.loop.create_task(presence_task())
+    client.loop.create_task(update_shop_task())
 
 # Declare commands
 @client.event
@@ -74,17 +80,7 @@ async def on_message(message: discord.Message):
     if message.author == client.user:
         return
     
-    if message.author.id not in bot_vars.user_interaction_tokens:
-            bot_vars.user_interaction_tokens[message.author.id] = [3, 5]
-    
-    if bot_vars.user_interaction_tokens[message.author.id][1] <= 0:
-        bot_vars.user_interaction_tokens[message.author.id][1] = 5
-        if bot_vars.user_interaction_tokens[message.author.id][0] < 3:
-            bot_vars.user_interaction_tokens[message.author.id][0] += 1
-            await message.add_reaction("🪙")
-    else:
-        bot_vars.user_interaction_tokens[message.author.id][1] -= 1
-    
+    await commands.process_tokens_info(message, bot_vars)
                 
     match message.content.split()[0]:
         case ";prompt":
@@ -97,13 +93,19 @@ async def on_message(message: discord.Message):
             await commands.set_own_message_memory(message, bot_vars)
         
         case ";clear-memory":
-           await commands.clear_memory(message, bot_vars)
+            await commands.clear_memory(message, bot_vars)
 
         case ";feed":
             await commands.feed(message, AKASH_API_KEY, bot_vars)
         
         case ";heal":
             await commands.heal(message, AKASH_API_KEY, bot_vars)
+        
+        case ";shop":
+            await commands.shop(message, AKASH_API_KEY, bot_vars)
+        
+        case ";buy":
+            await commands.buy(message, bot_vars)
 
         case ";clean-litter" | ";clean-litter-box":
             await commands.clean_litter(message, bot_vars)
@@ -129,7 +131,7 @@ async def on_message(message: discord.Message):
 
             if bot_vars.setting_message_interval_is_random:
                 is_time_to_automessage: bool = bot_vars.message_interval_random <= 0
-                bot_vars.message_interval_random = int(random.random() * 10.0) + 1 if is_time_to_automessage else bot_vars.message_interval_random - 1
+                bot_vars.message_interval_random = int(random.random() * 10.0) + 4 if is_time_to_automessage else bot_vars.message_interval_random - 1
             else:
                 is_time_to_automessage: bool = len(bot_vars.recent_messages) >= bot_vars.setting_message_interval
 

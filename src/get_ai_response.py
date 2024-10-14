@@ -1,6 +1,8 @@
 import openai
 from bot_variables import *
 from random import random
+from shop_item import *
+import time
 
 def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-405B-Instruct-FP8") -> str:
     client = openai.OpenAI(
@@ -61,3 +63,30 @@ def generate_item_health(akash_api_key: str, item: str) -> int:
     prompt += f"Item: {item}"
 
     return int(get_response(akash_api_key, prompt, "Meta-Llama-3-1-8B-Instruct-FP8")) + int(random() * 6.0) - 2
+
+def generate_shop_items(akash_api_key: str) -> list[ShopItem]:
+    prompt: str = f"Текущее время: {time.time()}.\nСгенерируй список из десяти вещей, которые могли бы быть частью гипотетической игры. У этих вещей будет название, насыщение "
+    prompt += "(целое число от -50 до 50), оздоровление (целое число от -10 до 10) и цена (целое число от 1 до 3). Аттрибуты одной вещи разделяются запятой без пробела, вещи "
+    prompt += "разделяются друг от друга переходом на новую линию. Названия вещей могут быть абсурдными (прим. Гоблинские бубуки), а могут и не быть (прим. Угощение). "
+    prompt += "НЕ ПИШИ НИЧЕГО, КРОМЕ САМОГО СПИСКА. НЕ ПЕРЕЧИСЛЯЙ ВЕЩИ, ПИШИ ТОЛЬКО СПИСОК."
+
+    response: str = get_response(akash_api_key, prompt, "Meta-Llama-3-1-8B-Instruct-FP8")
+    print(response)
+
+    shop_items: list[ShopItem] = []
+
+    for line in response.splitlines():
+        attributes: list[str] = line.split(",")
+        print(attributes)
+        shop_items.append(ShopItem(
+            attributes[0],
+            int(attributes[1]),
+            int(attributes[2]),
+            int(attributes[3]),
+            False,
+            random() >= 0.7,
+            random() >= 0.5,
+            random() >= 0.5
+        ))
+
+    return shop_items
