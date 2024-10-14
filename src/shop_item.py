@@ -12,4 +12,10 @@ class ShopItem():
     is_health_hidden: bool
 
     def __str__(self):
-        return f"~~**{'??' if self.is_name_hidden else self.name}** за {self.cost} 🪙: `{'??' if self.is_satiety_hidden else self.satiety}🍖` `{'??' if self.is_health_hidden else self.health}🩷`~~" if self.is_bought else f"**{'??' if self.is_name_hidden else self.name}** за {self.cost} 🪙: `{'??' if self.is_satiety_hidden else self.satiety}🍖` `{'??' if self.is_health_hidden else self.health}🩷`"
+        name = '??' if self.is_name_hidden else self.name
+        satiety = '??' if self.is_satiety_hidden else self.satiety
+        health = '??' if self.is_health_hidden else self.health
+
+        description = f"**{name}** за {self.cost} 🪙: `{satiety}🍖` `{health}🩷`"
+
+        return f"~~{description}~~" if self.is_bought else description
