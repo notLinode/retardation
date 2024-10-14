@@ -133,7 +133,7 @@ async def buy(message: Message, bot_vars: BotVariables) -> None:
             await message.channel.send(f":prohibited: Эта вещь уже куплена, подождите обновления магазина.")
             return
         
-        if bot_vars.user_interaction_tokens[message.author.id][0] <= item.cost:
+        if bot_vars.user_interaction_tokens[message.author.id][0] < item.cost:
             await message.channel.send(f":prohibited: У вас недостаточно токенов взаимодействия (у вас `{bot_vars.user_interaction_tokens[message.author.id][0]}`). Они выдаются каждые 6 сообщений.")
             return
         
