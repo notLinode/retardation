@@ -38,7 +38,7 @@ async def hunger_task(): # TODO: add dying on 0 health and reviving the bot with
             bot_vars.litter_box_timer = 60 # +10 litter box fullness every hour
 
         if bot_vars.litter_box_fullness >= 100:
-            bot_vars.health -= 1
+            bot_vars.add_health(-1.0)
 
         if bot_vars.satiety > 100.0:
             bot_vars.satiety -= 2.0
@@ -46,7 +46,7 @@ async def hunger_task(): # TODO: add dying on 0 health and reviving the bot with
         elif bot_vars.satiety > 0:
             bot_vars.satiety -= 0.2 # -1 satiety every 5 minutes
         else:
-            bot_vars.health -= 1.0 if bot_vars.health > 0 else 0
+            bot_vars.add_health(-1.0)
 
         await asyncio.sleep(60.0)
 

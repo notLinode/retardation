@@ -25,17 +25,24 @@ class BotVariables:
 
     def add_health(self, health: float) -> None:
         self.health += health
-        if self.health >= 100.0:
+        if self.health > 100.0:
             self.health = 100.0
-        elif self.health <= 0:
+        elif self.health < 0:
             self.health = 0
     
     def add_satiety(self, satiety: float) -> None:
         self.satiety += satiety
-        if self.satiety >= 200.0:
+        if self.satiety > 200.0:
             self.satiety = 200.0
-        elif self.satiety <= 0:
+        elif self.satiety < 0:
             self.satiety = 0
+    
+    def add_litter(self, litter: int) -> None:
+        self.litter_box_fullness += litter
+        if self.litter_box_fullness > 100:
+            self.litter_box_fullness = 100
+        elif self.litter_box_fullness < 0:
+            self.litter_box_fullness = 0
 
     user_interaction_tokens: dict[int, list[int]] = field(default_factory=dict[int, list[int]]) # key - userid;
                                                                                                 # list[0] - tokens (max 3);
