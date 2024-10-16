@@ -34,7 +34,7 @@ async def hunger_task(): # TODO: add dying on 0 health and reviving the bot with
         bot_vars.litter_box_timer -= 1
 
         if bot_vars.litter_box_timer == 0:
-            bot_vars.litter_box_fullness += 10
+            bot_vars.add_litter(10)
             bot_vars.litter_box_timer = 60 # +10 litter box fullness every hour
 
         if bot_vars.litter_box_fullness >= 100:
@@ -61,9 +61,14 @@ async def presence_task():
 
 async def update_shop_task():
     while True:
-        bot_vars.shop_items = ai.generate_shop_items(AKASH_API_KEY)
-        bot_vars.shop_items_next_update_time = int(time.time()) + 3600
-        await asyncio.sleep(3600.0)
+        try:
+            bot_vars.shop_items = ai.generate_shop_items(AKASH_API_KEY)
+            bot_vars.shop_items_next_update_time = int(time.time()) + 3600
+            await asyncio.sleep(3600.0)
+        except:
+            bot_vars.set_default_shop_items()
+            bot_vars.shop_items_next_update_time = int(time.time()) + 60
+            await asyncio.sleep(60.0)
 
 # Print a message when the bot is up
 @client.event
