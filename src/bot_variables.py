@@ -66,3 +66,11 @@ class BotVariables:
         item_1: ShopItem = ShopItem("Гоблинские бубуки", -30, 9, 1, 0, 0, 0, 0)
         item_2: ShopItem = ShopItem("Угощение", 50, 0, 2, 0, 0, 0, 0)
         self.shop_items = [item_1, item_2]
+    
+    @staticmethod
+    def deserialize_user_interaction_tokens(tokens_str: str) -> dict[int, list[int]]:
+        for pair in tokens_str.split(', '):
+            userid, tokens_info = pair.split(': ')
+            user_interaction_tokens: dict[int, list[int]] = {}
+            user_interaction_tokens[int(userid)] = eval(tokens_info)
+        return user_interaction_tokens

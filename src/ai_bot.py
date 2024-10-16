@@ -1,6 +1,10 @@
 import discord
 
 import asyncio
+from copy import deepcopy
+import csv
+from dataclasses import asdict, fields
+import os
 import random
 import re
 
@@ -25,10 +29,66 @@ intents.guild_reactions = True
 
 client = discord.Client(intents=intents)
 
-# Declare global variables and constants
-bot_vars = BotVariables()
+# Read saved info from a file if it exists
+bot_vars: BotVariables
+
+readpath: str = "data/bot_vars.csv"
+try:
+    with open(readpath, "r") as file:
+        reader = csv.DictReader(file)
+        reader.line_num
+        for row in reader:
+            bot_vars = BotVariables(
+                SETTING_MESSAGE_INTERVAL_MIN=int(row["SETTING_MESSAGE_INTERVAL_MIN"]),
+                SETTING_MESSAGE_INTERVAL_MAX=int(row["SETTING_MESSAGE_INTERVAL_MAX"]),
+                setting_message_interval=int(row["setting_message_interval"]),
+                setting_message_interval_is_random=row["setting_message_interval_is_random"] == "True",
+                message_interval_random=int(row["message_interval_random"]),
+                SETTING_OWN_MESSAGE_MEMORY_MIN=int(row["SETTING_OWN_MESSAGE_MEMORY_MIN"]),
+                SETTING_OWN_MESSAGE_MEMORY_MAX=int(row["SETTING_OWN_MESSAGE_MEMORY_MAX"]),
+                setting_own_message_memory=int(row["setting_own_message_memory"]),
+                satiety=float(row["satiety"]),
+                health=float(row["health"]),
+                litter_box_fullness=int(row["litter_box_fullness"]),
+                litter_box_timer=int(row["litter_box_timer"]),
+                user_interaction_tokens=eval(row["user_interaction_tokens"])
+            )
+except Exception as e:
+    print(f"Exception while reading bot vars: {e}")
+    bot_vars = BotVariables()
 
 # Create custom routines
+async def save_on_disk_task():
+    while True:
+        await asyncio.sleep(60.0)
+
+        async with asyncio.Lock():
+            try:
+                os.mkdir("data")
+            except FileExistsError:
+                pass
+            except Exception as e:
+                print(f"Error while making a directory: {e}")
+            
+            try:
+                bot_vars_copy: BotVariables = deepcopy(bot_vars)
+                writepath: str = "data/bot_vars.csv"
+                mode: str = "w+"
+
+                with open(writepath, mode) as file:
+                    flds = [fld.name for fld in fields(BotVariables)]
+                    flds.remove("recent_messages")
+                    print(flds)
+                    writer = csv.DictWriter(file, flds)
+
+                    writer.writeheader()
+                    bot_vars_dict = asdict(bot_vars_copy)
+                    bot_vars_dict.pop("recent_messages")
+                    print(bot_vars_dict, flds)
+                    writer.writerow(bot_vars_dict)
+            except Exception as e:
+                print(f"Error while writing to a file: {e}")
+
 async def hunger_task(): # TODO: add dying on 0 health and reviving the bot with a 5️⃣ reaction
     while True:
         bot_vars.litter_box_timer -= 1
@@ -77,6 +137,7 @@ async def on_ready():
     client.loop.create_task(hunger_task())
     client.loop.create_task(presence_task())
     client.loop.create_task(update_shop_task())
+    client.loop.create_task(save_on_disk_task())
 
 # Declare commands
 @client.event
