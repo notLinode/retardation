@@ -65,4 +65,4 @@ class BotVariables:
     def set_default_shop_items(self) -> None:
         item_1: ShopItem = ShopItem("Гоблинские бубуки", -30, 9, 1, 0, 0, 0, 0)
         item_2: ShopItem = ShopItem("Угощение", 50, 0, 2, 0, 0, 0, 0)
-        self.shop_items = list(item_1, item_2)
+        self.shop_items = [item_1, item_2]
