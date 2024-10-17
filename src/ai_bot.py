@@ -112,10 +112,13 @@ async def hunger_task(): # TODO: add dying on 0 health and reviving the bot with
 
 async def presence_task():
     while True:
-        presence: str = f"{'❤️' if int(bot_vars.health) > 10 else '💔'} {int(bot_vars.health)} "
-        presence += f"{'🍖' if int(bot_vars.satiety) > 50 else '🦴'} {int(bot_vars.satiety)} "
-        presence += f"💩 {bot_vars.litter_box_fullness}"
-        await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=presence))
+        try:
+            presence: str = f"{'❤️' if int(bot_vars.health) > 10 else '💔'} {int(bot_vars.health)} "
+            presence += f"{'🍖' if int(bot_vars.satiety) > 50 else '🦴'} {int(bot_vars.satiety)} "
+            presence += f"💩 {bot_vars.litter_box_fullness}"
+            await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=presence))
+        except:
+            pass
 
         await asyncio.sleep(10.0)
 
