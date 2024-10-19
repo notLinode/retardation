@@ -73,7 +73,7 @@ def generate_shop_items(akash_api_key: str) -> list[ShopItem]:
     prompt += "разделяются друг от друга переходом на новую линию. Названия вещей могут быть абсурдными (прим. Гоблинские бубуки), а могут и не быть (прим. Угощение). "
     prompt += "НЕ ПИШИ НИЧЕГО, КРОМЕ САМОГО СПИСКА. НЕ ПЕРЕЧИСЛЯЙ ВЕЩИ, ПИШИ ТОЛЬКО СПИСОК."
 
-    response: str = get_response(akash_api_key, prompt, "Meta-Llama-3-1-8B-Instruct-FP8")
+    response: str = get_response(akash_api_key, prompt)
     print(response)
 
     shop_items: list[ShopItem] = []
@@ -93,3 +93,14 @@ def generate_shop_items(akash_api_key: str) -> list[ShopItem]:
         ))
 
     return shop_items
+
+def generate_feeding_comment(akash_api_key: str, feeded_item: ShopItem) -> str:
+    prompt: str = "Ты - участник казуальной интернет-переписки в дискорде под ником "
+    prompt += f"invalid8074 (инвалид). Тебе только что скормили *{feeded_item.name}* и ты "
+    prompt += f"получил `{feeded_item.satiety}` к сытости и `{feeded_item.health}` к здоровью. "
+    prompt += "Как ты прокомментируешь это одним предложением? Тебе можно (но не необходимо) "
+    prompt += "допускать орфографические ошибки, тебе МОЖНО (но не необходимо) МАТЕРИТЬСЯ."
+
+    response: str = get_response(akash_api_key, prompt)
+    
+    return response
