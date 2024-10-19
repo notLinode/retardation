@@ -202,7 +202,8 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
     is_correct_emoji: bool = reaction.emoji == "5️⃣"
 
     if is_dead and is_reaction_to_bots_message and is_correct_emoji:
-        bot_vars = BotVariables()
+        bot_vars = BotVariables(shop_items=bot_vars.shop_items,
+                                shop_items_next_update_time=bot_vars.shop_items_next_update_time)
         LOGGER.info("Bot is revived, all progress is lost")
         await reaction.message.channel.send("Я ВОСКРЕС. Весь прогресс был обнулён.")
         
