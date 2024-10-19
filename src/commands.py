@@ -153,7 +153,8 @@ async def status(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         bot_status: str = f":heart: Здоровье: `{int(bot_vars.health)}`\n"
         bot_status += f":meat_on_bone: Сытость: `{int(bot_vars.satiety)}`\n"
-        bot_status += f":poop: Наполненность лотка: `{bot_vars.litter_box_fullness}`\n\n"
+        bot_status += f":poop: Наполненность лотка: `{bot_vars.litter_box_fullness}`\n"
+        bot_status += f":hourglass: Бот прожил: `{(int(time.time()) - bot_vars.CREATED_AT) // 3600}` часов\n\n"
         bot_status += f":coin: Ваши токены взаимодействия: `{bot_vars.user_interaction_tokens[message.author.id][0]}`"
 
         await message.channel.send(bot_status)

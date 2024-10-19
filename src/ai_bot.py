@@ -15,8 +15,8 @@ LOGGER.setLevel(logging.INFO)
 handler = logging.handlers.RotatingFileHandler(
     filename="discord.log",
     encoding="utf-8",
-    maxBytes=33_554_432,  # 32 MiB
-    backupCount=5,  # Rotate through 5 files
+    maxBytes=33_554_432, # 32 MiB
+    backupCount=5,
 )
 
 dt_fmt = "%Y-%m-%d %H:%M:%S"
@@ -73,7 +73,7 @@ async def save_on_disk_task():
             except Exception as e:
                 LOGGER.error(f"Exception while writing to a file: {e}")
 
-async def hunger_task(): # TODO: add dying on 0 health and reviving the bot with a 5️⃣ reaction
+async def hunger_task():
     while True:
         bot_vars.litter_box_timer -= 1
 
@@ -138,6 +138,10 @@ async def on_message(message: discord.Message):
     if message.author == client.user:
         return
     
+    if bot_vars.health <= 0:
+        await message.channel.send("сука я сдох поставь пять чтобы я ВОСКРЕС")
+        return
+
     await commands.process_tokens_info(message, bot_vars)
 
     try:
@@ -189,6 +193,19 @@ async def on_message(message: discord.Message):
         case _:
             await commands.automessage(message, AKASH_API_KEY, bot_vars, client)
 
+@client.event
+async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
+    global bot_vars
+
+    is_dead: bool = bot_vars.health <= 0
+    is_reaction_to_bots_message: bool = reaction.message.author.id == client.user.id
+    is_correct_emoji: bool = reaction.emoji == "5️⃣"
+
+    if is_dead and is_reaction_to_bots_message and is_correct_emoji:
+        bot_vars = BotVariables()
+        LOGGER.info("Bot is revived, all progress is lost")
+        await reaction.message.channel.send("Я ВОСКРЕС. Весь прогресс был обнулён.")
+        
 
 # Run the bot
 client.run(TOKEN, log_handler=handler)

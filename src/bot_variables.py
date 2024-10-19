@@ -9,6 +9,8 @@ from shop_item import *
 
 @dataclass
 class BotVariables:
+    CREATED_AT: int = int(time.time())
+
     SETTING_MESSAGE_INTERVAL_MIN: int = 1
     SETTING_MESSAGE_INTERVAL_MAX: int = 25
     setting_message_interval: int = 7
@@ -61,8 +63,9 @@ class BotVariables:
 
         for i in range(len(self.shop_items)):
             s += f"{i}. {self.shop_items[i]}\n"
-
-        s += f"\n⏳ До обновления магазина `{(self.shop_items_next_update_time - int(time.time())) // 60}` минут."
+        
+        mins_until_update: int = (self.shop_items_next_update_time - int(time.time())) // 60
+        s += f"\n⏳ До обновления магазина `{mins_until_update}` минут."
 
         return s
     
@@ -73,6 +76,7 @@ class BotVariables:
     
     def generate_dto(self) -> "BotVariablesDto":
         return BotVariablesDto(
+            self.CREATED_AT,
             self.SETTING_MESSAGE_INTERVAL_MIN,
             self.SETTING_MESSAGE_INTERVAL_MAX,
             self.setting_message_interval,
@@ -96,6 +100,7 @@ class BotVariables:
                 reader.line_num
                 for row in reader:
                     bot_vars = cls(
+                        CREATED_AT                     = int(row.get("CREATED_AT", int(time.time()))),
                         SETTING_MESSAGE_INTERVAL_MIN   = int(row["SETTING_MESSAGE_INTERVAL_MIN"]),
                         SETTING_MESSAGE_INTERVAL_MAX   = int(row["SETTING_MESSAGE_INTERVAL_MAX"]),
                         setting_message_interval       = int(row["setting_message_interval"]),
@@ -136,6 +141,8 @@ class BotVariables:
 
 @dataclass
 class BotVariablesDto:
+    CREATED_AT: int
+
     SETTING_MESSAGE_INTERVAL_MIN: int
     SETTING_MESSAGE_INTERVAL_MAX: int
     setting_message_interval: int
