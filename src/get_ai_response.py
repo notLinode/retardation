@@ -1,8 +1,13 @@
 import openai
-from bot_variables import *
+
+import logging
 from random import random
-from shop_item import *
 import time
+
+from bot_variables import *
+from shop_item import *
+
+LOGGER = logging.getLogger(__name__)
 
 def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-405B-Instruct-FP8") -> str:
     try:
@@ -22,7 +27,8 @@ def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-4
         )
 
         return response.choices[0].message.content
-    except:
+    except Exception as e:
+        LOGGER.error(f"Exception while calling Akash's API: {e}")
         return "🚫 вы даун"
 
 def generate_automessage(akash_api_key: str, bot_vars: BotVariables) -> str:
@@ -74,13 +80,13 @@ def generate_shop_items(akash_api_key: str) -> list[ShopItem]:
     prompt += "НЕ ПИШИ НИЧЕГО, КРОМЕ САМОГО СПИСКА. НЕ ПЕРЕЧИСЛЯЙ ВЕЩИ, ПИШИ ТОЛЬКО СПИСОК."
 
     response: str = get_response(akash_api_key, prompt)
-    print(response)
+
+    LOGGER.info(f"Generated shop items: {response}")
 
     shop_items: list[ShopItem] = []
 
     for line in response.splitlines():
         attributes: list[str] = line.split(",")
-        print(attributes)
         shop_items.append(ShopItem(
             attributes[0],
             int(attributes[1]),

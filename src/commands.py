@@ -103,7 +103,7 @@ async def clean_litter(message: Message, bot_vars: BotVariables) -> None:
             bonus_tokens: int = bot_vars.litter_box_fullness // 10
             bot_vars.litter_box_fullness = 0
             bot_vars.user_interaction_tokens[message.author.id][0] += bonus_tokens
-            await message.channel.send(f"лоток очищен :white_check_mark:\nВы получили `{bonus_tokens} 🪙`")
+            await message.channel.send(f"лоток очищен :white_check_mark:\nВы получили `{bonus_tokens}` 🪙")
         else:   
             await message.channel.send("лоток уже чист....")
 
