@@ -7,6 +7,7 @@ import logging
 from bot_variables import *
 import commands
 import get_ai_response as ai
+from shop_buttons_view import ShopView
 
 # Declare logger
 LOGGER = logging.getLogger("invalid")
@@ -60,6 +61,9 @@ except FileNotFoundError as e:
 except Exception as e:
     LOGGER.error(f"Exception while reading bot vars: {e}")
     bot_vars = BotVariables()
+
+bot_vars.ai_key = AKASH_API_KEY
+bot_vars.client = client
 
 # Create custom routines
 async def save_on_disk_task():
@@ -173,7 +177,7 @@ async def on_message(message: discord.Message):
             await commands.shop(message, AKASH_API_KEY, bot_vars)
         
         case ";buy":
-            await commands.buy(message, AKASH_API_KEY, bot_vars)
+            await commands.buy(message, bot_vars)
 
         case ";clean-litter" | ";clean-litter-box":
             await commands.clean_litter(message, bot_vars)
@@ -194,7 +198,7 @@ async def on_message(message: discord.Message):
             if message.author.id == 285736507472347147:
                 bot_vars.user_interaction_tokens[285736507472347147][0] = 9999
                 await message.channel.send("george floyd negroid cyberg technology activated")
-        
+
         case _:
             await commands.automessage(message, AKASH_API_KEY, bot_vars, client)
 

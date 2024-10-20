@@ -1,4 +1,4 @@
-from discord import Message
+from discord import Message, Client
 
 import csv
 from dataclasses import asdict, dataclass, field, fields
@@ -10,6 +10,9 @@ from shop_item import *
 @dataclass
 class BotVariables:
     CREATED_AT: int = int(time.time())
+    
+    ai_key: str = None
+    client: Client = None
 
     SETTING_MESSAGE_INTERVAL_MIN: int = 1
     SETTING_MESSAGE_INTERVAL_MAX: int = 25

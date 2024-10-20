@@ -1,11 +1,12 @@
-from discord import Message, Client
+from discord import Message, Client, TextChannel
 
 import time
 import random
 import re
 
-import get_ai_response as ai
 from bot_variables import *
+import get_ai_response as ai
+from shop_buttons_view import *
 
 async def prompt(message: Message, AKASH_API_KEY: str) -> None:
     async with message.channel.typing():
@@ -114,9 +115,9 @@ async def shop(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
         if not bot_vars.get_shop_items_str():
             bot_vars.shop_items = ai.generate_shop_items(AKASH_API_KEY)
             
-        await message.channel.send(bot_vars.get_shop_items_str())
+        await message.channel.send(bot_vars.get_shop_items_str(), view=ShopView(bot_vars))
 
-async def buy(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
+async def buy(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         item_idx_str: str = message.content[5:]
 
@@ -125,31 +126,33 @@ async def buy(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> N
             return
         
         item_idx: int = int(item_idx_str) - 1
+        await buy_item(item_idx, message.channel, message.author.id, bot_vars)
 
-        if item_idx < 0 or item_idx >= len(bot_vars.shop_items):
-            await message.channel.send(":prohibited: В магазине нет вещи под таким номером.")
-            return
-
-        item: ShopItem = bot_vars.shop_items[item_idx]
+# Used by ShopButton
+async def buy_item(idx: int, channel: TextChannel, userid: int, bot_vars: BotVariables) -> bool:
+    async with channel.typing():
+        item: ShopItem = bot_vars.shop_items[idx]
         
         if item.is_bought:
-            await message.channel.send(f":prohibited: Эта вещь уже куплена, подождите обновления магазина.")
-            return
+            await channel.send(f":prohibited: Эта вещь уже куплена, подождите обновления магазина.")
+            return item.is_bought
         
-        if bot_vars.user_interaction_tokens[message.author.id][0] < item.cost:
-            await message.channel.send(f":prohibited: У вас недостаточно токенов взаимодействия (у вас `{bot_vars.user_interaction_tokens[message.author.id][0]}`). Они выдаются каждые 6 сообщений.")
-            return
+        if bot_vars.user_interaction_tokens[userid][0] < item.cost:
+            await channel.send(f":prohibited: У вас недостаточно токенов взаимодействия (у вас `{bot_vars.user_interaction_tokens[userid][0]}`). Они выдаются каждые 6 сообщений.")
+            return item.is_bought
         
-        bot_vars.user_interaction_tokens[message.author.id][0] -= item.cost
+        bot_vars.user_interaction_tokens[userid][0] -= item.cost
         item.is_name_hidden = item.is_satiety_hidden = item.is_health_hidden = False
-        response: str = f"Вы успешно купили {item}\n"
+        response: str = f"<@{userid}>, вы успешно купили {item}\n"
         item.is_bought = True
 
         bot_vars.add_health(item.health)
         bot_vars.add_satiety(item.satiety)
 
-        response += ai.generate_feeding_comment(AKASH_API_KEY, item)
-        await message.channel.send(response)
+        response += ai.generate_feeding_comment(bot_vars.ai_key, item)
+        await channel.send(response)
+
+    return item.is_bought
 
 async def status(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
