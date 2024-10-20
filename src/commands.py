@@ -10,13 +10,24 @@ from shop_buttons_view import *
 
 async def prompt(message: Message, AKASH_API_KEY: str) -> None:
     async with message.channel.typing():
-        ai_response: str = ai.get_response(AKASH_API_KEY, message.content[8:])
+        bot_msg: Message = await message.channel.send("✅\n")
+        chunk_buf: str = ""
+        chunk_buf_len: int = 0
 
-        while len(ai_response) > 2000:
-            await message.channel.send(ai_response[:2000])
-            ai_response = ai_response[2000:]
+        for chunk in ai.stream_response(AKASH_API_KEY, message.content[8:]):
+            if chunk is None:
+                break
 
-        await message.channel.send(ai_response)
+            chunk_buf += chunk
+            chunk_buf_len += len(chunk)
+
+            if chunk_buf_len >= 200:
+                bot_msg = await bot_msg.edit(content=bot_msg.content + chunk_buf)
+                chunk_buf = ""
+                chunk_buf_len = 0
+
+        if chunk_buf:
+            await bot_msg.edit(content=bot_msg.content + chunk_buf)
 
 async def set_message_interval(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():

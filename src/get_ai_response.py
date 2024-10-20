@@ -31,6 +31,30 @@ def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-4
         LOGGER.error(f"Exception while calling Akash's API: {e}")
         return "🚫 вы даун"
 
+def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-405B-Instruct-FP8"):
+    try:
+        client = openai.OpenAI(
+            api_key=akash_api_key,
+            base_url="https://chatapi.akash.network/api/v1"
+        )
+
+        response = client.chat.completions.create(
+            model=model,
+            messages = [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            stream=True
+        )
+
+        for chunk in response:
+            yield chunk.choices[0].delta.content
+    except Exception as e:
+        LOGGER.error(f"Exception while calling Akash's API to stream: {e}")
+        return "🚫 вы даун"
+
 def generate_automessage(akash_api_key: str, bot_vars: BotVariables) -> str:
     response: str
     
