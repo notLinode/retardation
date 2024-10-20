@@ -13,15 +13,21 @@ async def prompt(message: Message, AKASH_API_KEY: str) -> None:
         bot_msg: Message = await message.channel.send("✅\n")
         chunk_buf: str = ""
         chunk_buf_len: int = 0
+        msg_len: int = 0
 
         for chunk in ai.stream_response(AKASH_API_KEY, message.content[8:]):
             if chunk is None:
                 break
 
             chunk_buf += chunk
-            chunk_buf_len += len(chunk)
+            chunk_len = len(chunk)
+            chunk_buf_len += chunk_len
+            msg_len += chunk_len
 
             if chunk_buf_len >= 200:
+                if msg_len >= 2000:
+                    bot_msg = await message.channel.send(chunk_buf)
+                    msg_len = chunk_buf_len
                 bot_msg = await bot_msg.edit(content=bot_msg.content + chunk_buf)
                 chunk_buf = ""
                 chunk_buf_len = 0
