@@ -76,10 +76,11 @@ async def feed(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
         food_satiety: int = ai.generate_food_satiety(AKASH_API_KEY, food_item)
         bot_vars.add_satiety(float(food_satiety))
 
-        await message.channel.send(f"вау мне дали **{food_item}** и я {'получил' if food_satiety >= 0 else 'потерял'} `{abs(food_satiety)}` сытости {':drooling_face::drooling_face:' if food_satiety >= 40 else ''}")
-        
+        response: str = f"вау мне дали **{food_item}** и я {'получил' if food_satiety >= 0 else 'потерял'} `{abs(food_satiety)}` сытости {':drooling_face::drooling_face:' if food_satiety >= 40 else ''}\n"
         item: ShopItem = ShopItem(food_item, food_satiety, 0, 0, 0, 0, 0, 0)
-        await message.channel.send(ai.generate_feeding_comment(AKASH_API_KEY, item))
+        response += ai.generate_feeding_comment(AKASH_API_KEY, item)
+
+        await message.channel.send(response)
 
 async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
@@ -92,10 +93,11 @@ async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
         item_health: int = ai.generate_item_health(AKASH_API_KEY, item)
         bot_vars.add_health(float(item_health))
 
-        await message.channel.send(f"меня подлечили с помощью **{item}** и я {'получил' if item_health >= 0 else 'нахуй потерял'} `{abs(item_health)}` здоровья {':heart:' if item_health >= 0 else ':broken_heart::broken_heart::broken_heart:'}")
-        
+        response: str = f"меня подлечили с помощью **{item}** и я {'получил' if item_health >= 0 else 'нахуй потерял'} `{abs(item_health)}` здоровья {':heart:' if item_health >= 0 else ':broken_heart::broken_heart::broken_heart:'}\n"
         item_obj: ShopItem = ShopItem(item, 0, item_health, 0, 0, 0, 0, 0)
-        await message.channel.send(ai.generate_feeding_comment(AKASH_API_KEY, item_obj))
+        response += ai.generate_feeding_comment(AKASH_API_KEY, item_obj)
+        
+        await message.channel.send(response)
 
 async def clean_litter(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
@@ -103,7 +105,7 @@ async def clean_litter(message: Message, bot_vars: BotVariables) -> None:
             bonus_tokens: int = bot_vars.litter_box_fullness // 10
             bot_vars.litter_box_fullness = 0
             bot_vars.user_interaction_tokens[message.author.id][0] += bonus_tokens
-            await message.channel.send(f"лоток очищен :white_check_mark:\nВы получили `{bonus_tokens}` 🪙")
+            await message.channel.send(f"лоток очищен :white_check_mark:\nВы получили {bonus_tokens} 🪙")
         else:   
             await message.channel.send("лоток уже чист....")
 
@@ -140,14 +142,14 @@ async def buy(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> N
         
         bot_vars.user_interaction_tokens[message.author.id][0] -= item.cost
         item.is_name_hidden = item.is_satiety_hidden = item.is_health_hidden = False
-        await message.channel.send(f"Вы успешно купили {item}")
+        response: str = f"Вы успешно купили {item}\n"
         item.is_bought = True
 
         bot_vars.add_health(item.health)
         bot_vars.add_satiety(item.satiety)
 
-        feeding_comment: str = ai.generate_feeding_comment(AKASH_API_KEY, item)
-        await message.channel.send(feeding_comment)
+        response += ai.generate_feeding_comment(AKASH_API_KEY, item)
+        await message.channel.send(response)
 
 async def status(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():

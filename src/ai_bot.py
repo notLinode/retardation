@@ -190,6 +190,11 @@ async def on_message(message: discord.Message):
         case ";help":
             await commands.help(message)
         
+        case ";gm-1":
+            if message.author.id == 285736507472347147:
+                bot_vars.user_interaction_tokens[285736507472347147][0] = 9999
+                await message.channel.send("george floyd negroid cyberg technology activated")
+        
         case _:
             await commands.automessage(message, AKASH_API_KEY, bot_vars, client)
 
