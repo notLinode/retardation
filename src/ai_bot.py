@@ -130,7 +130,7 @@ async def on_ready():
     LOGGER.info(f'We have logged in as {client.user}')
     client.loop.create_task(hunger_task())
     client.loop.create_task(presence_task())
-    client.loop.create_task(update_shop_task())
+    # client.loop.create_task(update_shop_task())
     client.loop.create_task(save_on_disk_task())
     print("Bot is fully ready")
 
@@ -188,6 +188,9 @@ async def on_message(message: discord.Message):
         case ";tokens" | ";tok":
             await commands.tokens(message, bot_vars)
         
+        case ";blackjack" | ";bj":
+            await commands.blackjack(message, bot_vars)
+
         case ";ping":
             await message.channel.send('pong')
         

@@ -4,6 +4,7 @@ import time
 import random
 import re
 
+import blackjack as bj
 from bot_variables import *
 import get_ai_response as ai
 from shop_buttons_view import *
@@ -11,7 +12,7 @@ from shop_buttons_view import *
 async def prompt(message: Message, AKASH_API_KEY: str) -> None:
     async with message.channel.typing():
         bot_msg: Message = await message.channel.send("✅\n")
-        chunk_buf: str = ""
+        chunk_buf: str = "" # TODO: make chunk_buf a list[str] type for optimization
         chunk_buf_len: int = 0
         msg_len: int = 0
 
@@ -185,6 +186,36 @@ async def tokens(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         await message.channel.send(f":coin: Ваши токены взаимодействия: `{bot_vars.user_interaction_tokens[message.author.id][0]}`")
 
+async def blackjack(message: Message, bot_vars: BotVariables) -> None:
+    async with message.channel.typing():
+        token_info: list[int] = bot_vars.user_interaction_tokens[message.author.id]
+
+        bet_str_list: list[str] = message.content.split(maxsplit=1)
+        if len(bet_str_list) < 2:
+            await message.channel.send(f":prohibited: Укажите ставку (у вас `{token_info[0]}` :coin:).")
+            return
+        
+        bet_str: str = bet_str_list[1]
+        if not bet_str.isnumeric():
+            await message.channel.send(f":prohibited: вы даун")
+            return
+        
+        bet: int = int(bet_str)
+        if bet < 1:
+            await message.channel.send(f":prohibited: вы даун")
+            return
+        if bet > token_info[0]:
+            await message.channel.send(f":prohibited: Недостаточно токенов (у вас `{token_info[0]}` :coin:).")
+            return
+
+        bj_manager: bj.GameManager = bj.GameManager(
+            bet=bet,
+            token_info=token_info,
+            user=message.author
+            )
+        bj_view: bj.View = bj.View(bj_manager)
+        await message.channel.send(str(bj_manager), view=bj_view)
+
 async def help(message: Message) -> None:
     async with message.channel.typing():
         help_msg: str = "```"
@@ -195,12 +226,14 @@ async def help(message: Message) -> None:
         help_msg += "\n;ping - pong.\n"
         help_msg += "\n------====* КОМАНДЫ УХОДА ЗА БОТОМ *====------\n"
         help_msg += "\n;status - Показывает состояние бота и количество ваших токенов.\n"
-        help_msg += "\n;tokens - Показывает количество ваших токенов.\n"
+        help_msg += "\n;tokens (;tok) - Показывает количество ваших токенов.\n"
         help_msg += "\n;shop - Показывает магазин. Магазин обновляется каждый час.\n"
         help_msg += "\n;buy [Номер: int] - Покупает вещь из магазина и даёт её боту.\n"
         help_msg += "\n;feed [Еда: str] - Кормит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
         help_msg += "\n;heal [Лекарство: str] - Лечит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
-        help_msg += "\n;clean-litter - Очищает лоток бота. Тратит 1 токен при использовании.\n"
+        help_msg += "\n;clean-litter - Очищает лоток бота.\n"
+        help_msg += "\n------====* ИГРУШКИ)) *====------\n"
+        help_msg += "\n;blackjack (;bj) [Ставка: int] - Сыграть в блэкджек.\n"
         help_msg += "```"
 
         await message.channel.send(help_msg)
