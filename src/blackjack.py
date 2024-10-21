@@ -88,7 +88,7 @@ class Game():
             )
             return self.state
         
-        has_enough_money: bool = (self.bet * 2) <= self.token_info[0]
+        has_enough_money: bool = self.bet <= self.token_info[0]
         is_first_move: bool = self.move_num == 1
 
         if len(self.player_hand) == 2 and is_first_move:
