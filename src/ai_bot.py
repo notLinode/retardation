@@ -115,7 +115,7 @@ async def presence_task():
 async def update_shop_task():
     while True:
         try:
-            bot_vars.shop_items = ai.generate_shop_items(AKASH_API_KEY)
+            bot_vars.shop_items = await ai.generate_shop_items(AKASH_API_KEY)
             bot_vars.shop_items_next_update_time = int(time.time()) + 3600
             await asyncio.sleep(3600.0)
         except Exception as e:
@@ -187,6 +187,9 @@ async def on_message(message: discord.Message):
 
         case ";tokens" | ";tok":
             await commands.tokens(message, bot_vars)
+        
+        case ";pay":
+            await commands.pay(message, bot_vars)
         
         case ";blackjack" | ";bj":
             await commands.blackjack(message, bot_vars)

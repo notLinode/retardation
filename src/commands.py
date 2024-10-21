@@ -92,12 +92,12 @@ async def feed(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
         bot_vars.user_interaction_tokens[message.author.id][0] -= 1
         
         food_item: str = message.content[6:]
-        food_satiety: int = ai.generate_food_satiety(AKASH_API_KEY, food_item)
+        food_satiety: int = await ai.generate_food_satiety(AKASH_API_KEY, food_item)
         bot_vars.add_satiety(float(food_satiety))
 
         response: str = f"вау мне дали **{food_item}** и я {'получил' if food_satiety >= 0 else 'потерял'} `{abs(food_satiety)}` сытости {':drooling_face::drooling_face:' if food_satiety >= 40 else ''}\n"
         item: ShopItem = ShopItem(food_item, food_satiety, 0, 0, 0, 0, 0, 0)
-        response += ai.generate_feeding_comment(AKASH_API_KEY, item)
+        response += await ai.generate_feeding_comment(AKASH_API_KEY, item)
 
         await message.channel.send(response)
 
@@ -109,12 +109,12 @@ async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
         bot_vars.user_interaction_tokens[message.author.id][0] -= 1
 
         item: str = message.content[6:]
-        item_health: int = ai.generate_item_health(AKASH_API_KEY, item)
+        item_health: int = await ai.generate_item_health(AKASH_API_KEY, item)
         bot_vars.add_health(float(item_health))
 
         response: str = f"меня подлечили с помощью **{item}** и я {'получил' if item_health >= 0 else 'нахуй потерял'} `{abs(item_health)}` здоровья {':heart:' if item_health >= 0 else ':broken_heart::broken_heart::broken_heart:'}\n"
         item_obj: ShopItem = ShopItem(item, 0, item_health, 0, 0, 0, 0, 0)
-        response += ai.generate_feeding_comment(AKASH_API_KEY, item_obj)
+        response += await ai.generate_feeding_comment(AKASH_API_KEY, item_obj)
         
         await message.channel.send(response)
 
@@ -131,7 +131,7 @@ async def clean_litter(message: Message, bot_vars: BotVariables) -> None:
 async def shop(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         if not bot_vars.get_shop_items_str():
-            bot_vars.shop_items = ai.generate_shop_items(AKASH_API_KEY)
+            bot_vars.shop_items = await ai.generate_shop_items(AKASH_API_KEY)
             
         await message.channel.send(bot_vars.get_shop_items_str(), view=ShopView(bot_vars))
 
@@ -167,7 +167,7 @@ async def buy_item(idx: int, channel: TextChannel, userid: int, bot_vars: BotVar
         bot_vars.add_health(item.health)
         bot_vars.add_satiety(item.satiety)
 
-        response += ai.generate_feeding_comment(bot_vars.ai_key, item)
+        response += await ai.generate_feeding_comment(bot_vars.ai_key, item)
         await channel.send(response)
 
     return item.is_bought
@@ -186,6 +186,42 @@ async def tokens(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         await message.channel.send(f":coin: Ваши токены взаимодействия: `{bot_vars.user_interaction_tokens[message.author.id][0]}`")
 
+async def pay(message: Message, bot_vars: BotVariables) -> None:
+    async with message.channel.typing():
+        token_info: list[int] = bot_vars.user_interaction_tokens[message.author.id]
+
+        pay_str_list: list[str] = message.content.split(maxsplit=2)
+        if len(pay_str_list) < 3:
+            await message.channel.send(f":prohibited: Укажите получателя и сумму перевода (у вас `{token_info[0]}` :coin:).")
+            return
+        
+        recipient_id_str: str = pay_str_list[1].removeprefix("<@").removesuffix(">")
+        payment_str: str = pay_str_list[2]
+        recipient_id: int
+        payment: int
+
+        if payment_str.isnumeric() and recipient_id_str.isnumeric():
+            payment = int(payment_str)
+            recipient_id = int(recipient_id_str)
+        elif payment_str == "all" and recipient_id_str.isnumeric():
+            payment = token_info[0]
+            recipient_id = int(recipient_id_str)
+        else:
+            await message.channel.send(f":prohibited: вы даун")
+            return
+        
+        if payment < 1:
+            await message.channel.send(f":prohibited: вы даун")
+            return
+        if payment > token_info[0]:
+            await message.channel.send(f":prohibited: Недостаточно токенов (у вас `{token_info[0]}` :coin:).")
+            return
+        
+        token_info[0] -= payment
+        bot_vars.user_interaction_tokens[recipient_id][0] += payment
+
+        await message.channel.send(f"Вы успешно перевели {payment} :coin: на счёт <@{recipient_id_str}>.")
+
 async def blackjack(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         token_info: list[int] = bot_vars.user_interaction_tokens[message.author.id]
@@ -196,11 +232,15 @@ async def blackjack(message: Message, bot_vars: BotVariables) -> None:
             return
         
         bet_str: str = bet_str_list[1]
-        if not bet_str.isnumeric():
+        bet: int
+        if bet_str.isnumeric():
+            bet = int(bet_str)
+        elif bet_str == "all":
+            bet = token_info[0]
+        else:
             await message.channel.send(f":prohibited: вы даун")
             return
         
-        bet: int = int(bet_str)
         if bet < 1:
             await message.channel.send(f":prohibited: вы даун")
             return
@@ -224,9 +264,11 @@ async def help(message: Message) -> None:
         help_msg += "\n;set-own-message-memory [Память: int] - поставить количество собственных сообщений бота, которые он запомнит и учтёт при написании следующего своего сообщения.\n"
         help_msg += "\n;clear-memory - Очищает память бота от своих и пользовательских сообщений.\n"
         help_msg += "\n;ping - pong.\n"
+        help_msg += "\n------====* 💸 ЭКОНОМИКА 💸 *====------\n"
+        help_msg += "\n;tokens (;tok) - Показывает количество ваших токенов.\n"
+        help_msg += "\n;pay [@Ник - mention, Сумма - int | \"all\"] - Переводит токены с вашего счета на чужой.\n"
         help_msg += "\n------====* КОМАНДЫ УХОДА ЗА БОТОМ *====------\n"
         help_msg += "\n;status - Показывает состояние бота и количество ваших токенов.\n"
-        help_msg += "\n;tokens (;tok) - Показывает количество ваших токенов.\n"
         help_msg += "\n;shop - Показывает магазин. Магазин обновляется каждый час.\n"
         help_msg += "\n;buy [Номер: int] - Покупает вещь из магазина и даёт её боту.\n"
         help_msg += "\n;feed [Еда: str] - Кормит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
@@ -289,7 +331,7 @@ async def automessage(
     automessage_condition: bool = is_mentioned or is_mentioned_directly or is_time_to_automessage
     if automessage_condition and bot_vars.recent_messages:
         async with message.channel.typing():
-            automessage: str = ai.generate_automessage(AKASH_API_KEY, bot_vars)
+            automessage: str = await ai.generate_automessage(AKASH_API_KEY, bot_vars)
             await message.channel.send(automessage)
 
             bot_vars.recent_messages.clear()

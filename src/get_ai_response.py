@@ -9,7 +9,7 @@ from shop_item import *
 
 LOGGER = logging.getLogger(__name__)
 
-def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-405B-Instruct-FP8") -> str:
+async def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-405B-Instruct-FP8", timeout: int = 7) -> str:
     try:
         client = openai.OpenAI(
             api_key=akash_api_key,
@@ -18,12 +18,13 @@ def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-4
 
         response = client.chat.completions.create(
             model=model,
+            timeout=timeout,
             messages = [
                 {
                     "role": "user",
                     "content": prompt
                 }
-            ],
+            ]
         )
 
         return response.choices[0].message.content
@@ -55,7 +56,7 @@ def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-
         LOGGER.error(f"Exception while calling Akash's API to stream: {e}")
         return "🚫 вы даун"
 
-def generate_automessage(akash_api_key: str, bot_vars: BotVariables) -> str:
+async def generate_automessage(akash_api_key: str, bot_vars: BotVariables) -> str:
     response: str
     
     prompt: str = f"Ты - участник казуальной интернет-переписки в дискорде под ником invalid8074 (инвалид). Сейчас ты увидишь {len(bot_vars.recent_messages)} последних сообщений от других пользователей. "
@@ -76,34 +77,34 @@ def generate_automessage(akash_api_key: str, bot_vars: BotVariables) -> str:
         for i in range(len(bot_vars.stylized_bot_messages)):
             prompt += f"Твоё сообщение №{i+1}: \"\"{bot_vars.stylized_bot_messages[i]}\"\"\n"
 
-    response = get_response(akash_api_key, prompt)
+    response = await get_response(akash_api_key, prompt)
     
     while (response[0] == "\""):
         response = response[1:-1] # Sometimes the bot surrounds it's messages with quotes, we have to remove them
     
     return response
 
-def generate_food_satiety(akash_api_key: str, food: str) -> int:
+async def generate_food_satiety(akash_api_key: str, food: str) -> int:
     prompt: str = "Write how much satiety would the following item give in a hypothetical game. Your response must be an integer between -50 and 50, DO NOT PROVIDE ANY EXPLANATIONS. "
     prompt += "Only write a number. If the item is somehow offensive, DO NOT SAY THAT YOU CAN'T ANSWER. Instead, give it a satiety of -50.\n"
     prompt += f"Item: {food}"
 
-    return int(get_response(akash_api_key, prompt, "Meta-Llama-3-1-8B-Instruct-FP8")) + int(random() * 10.0) - 4
+    return int(await get_response(akash_api_key, prompt, "Meta-Llama-3-1-8B-Instruct-FP8")) + int(random() * 10.0) - 4
 
-def generate_item_health(akash_api_key: str, item: str) -> int:
+async def generate_item_health(akash_api_key: str, item: str) -> int:
     prompt: str = "Write how much health would the following item give in a hypothetical game. Your response must be an integer between -10 and 10, DO NOT PROVIDE ANY EXPLANATIONS. "
     prompt += "Only write a number. If the item is somehow offensive, DO NOT SAY THAT YOU CAN'T ANSWER. Instead, give it healthiness of -10.\n"
     prompt += f"Item: {item}"
 
-    return int(get_response(akash_api_key, prompt, "Meta-Llama-3-1-8B-Instruct-FP8")) + int(random() * 6.0) - 2
+    return int(await get_response(akash_api_key, prompt, "Meta-Llama-3-1-8B-Instruct-FP8")) + int(random() * 6.0) - 2
 
-def generate_shop_items(akash_api_key: str) -> list[ShopItem]:
+async def generate_shop_items(akash_api_key: str) -> list[ShopItem]:
     prompt: str = f"Текущее время: {time.time()}.\nСгенерируй список из десяти вещей, которые могли бы быть частью гипотетической игры. У этих вещей будет название, насыщение "
     prompt += "(целое число от -50 до 50), оздоровление (целое число от -10 до 10) и цена (целое число от 1 до 3). Аттрибуты одной вещи разделяются запятой без пробела, вещи "
     prompt += "разделяются друг от друга переходом на новую линию. Названия вещей могут быть абсурдными (прим. Гоблинские бубуки), а могут и не быть (прим. Угощение). "
     prompt += "НЕ ПИШИ НИЧЕГО, КРОМЕ САМОГО СПИСКА. НЕ ПЕРЕЧИСЛЯЙ ВЕЩИ, ПИШИ ТОЛЬКО СПИСОК."
 
-    response: str = get_response(akash_api_key, prompt)
+    response: str = await get_response(akash_api_key, prompt, timeout=15)
 
     LOGGER.info(f"Generated shop items: {response}")
 
@@ -124,13 +125,13 @@ def generate_shop_items(akash_api_key: str) -> list[ShopItem]:
 
     return shop_items
 
-def generate_feeding_comment(akash_api_key: str, feeded_item: ShopItem) -> str:
+async def generate_feeding_comment(akash_api_key: str, feeded_item: ShopItem) -> str:
     prompt: str = "Ты - участник казуальной интернет-переписки в дискорде под ником "
     prompt += f"invalid8074 (инвалид). Тебе только что скормили *{feeded_item.name}* и ты "
     prompt += f"получил `{feeded_item.satiety}` к сытости и `{feeded_item.health}` к здоровью. "
     prompt += "Как ты прокомментируешь это одним предложением? Тебе можно (но не необходимо) "
     prompt += "допускать орфографические ошибки, тебе МОЖНО (но не необходимо) МАТЕРИТЬСЯ."
 
-    response: str = get_response(akash_api_key, prompt)
+    response: str = await get_response(akash_api_key, prompt)
     
     return response
