@@ -184,6 +184,18 @@ async def status(message: Message, bot_vars: BotVariables) -> None:
 
 async def tokens(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
+        tok_str_list: list[str] = message.content.split(maxsplit=1)
+
+        if len(tok_str_list) != 2:
+            await message.channel.send(f":coin: Ваши токены взаимодействия: `{bot_vars.user_interaction_tokens[message.author.id][0]}`")
+            return
+
+        tok_id_str: str = tok_str_list[1].removeprefix("<@").removesuffix(">")
+        if tok_id_str.isnumeric():
+            if int(tok_id_str) in bot_vars.user_interaction_tokens.keys():
+                await message.channel.send(f":coin: Токены взаимодействия <@{tok_id_str}>: `{bot_vars.user_interaction_tokens[int(tok_id_str)][0]}`")
+                return
+
         await message.channel.send(f":coin: Ваши токены взаимодействия: `{bot_vars.user_interaction_tokens[message.author.id][0]}`")
 
 async def pay(message: Message, bot_vars: BotVariables) -> None:
@@ -265,7 +277,7 @@ async def help(message: Message) -> None:
         help_msg += "\n;clear-memory - Очищает память бота от своих и пользовательских сообщений.\n"
         help_msg += "\n;ping - pong.\n"
         help_msg += "\n------====* 💸 ЭКОНОМИКА 💸 *====------\n"
-        help_msg += "\n;tokens (;tok) - Показывает количество ваших токенов.\n"
+        help_msg += "\n;tokens (;tok) [@Ник - mention | None] - Показывает ваши токены (либо токены указанного человека).\n"
         help_msg += "\n;pay [@Ник - mention, Сумма - int | \"all\"] - Переводит токены с вашего счета на чужой.\n"
         help_msg += "\n------====* КОМАНДЫ УХОДА ЗА БОТОМ *====------\n"
         help_msg += "\n;status - Показывает состояние бота и количество ваших токенов.\n"
