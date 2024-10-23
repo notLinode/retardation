@@ -191,10 +191,14 @@ class GameManager():
             self.cur_game, self.split_game = self.split_game, self.cur_game
             self.split_game.state = Game.State.DEALER_DRAWING
             self.is_split = False
+            self.state = self.cur_game.state
+            return
         
-        if self.split_game != None and is_game_end:
-            self.split_game.dealer_draw()
-    
+        if self.split_game is not None and is_game_end:
+            self.state = self.cur_game.state = Game.State.DEALER_DRAWING
+            await self.cur_game.dealer_draw()
+            await self.split_game.give_winnings()
+
     async def stand(self) -> None:
         await self.cur_game.stand()
         self.state = self.cur_game.state
@@ -236,6 +240,7 @@ class GameManager():
         self.split_game.dealer_hand = self.cur_game.dealer_hand
         self.is_split = True
         self.state = self.cur_game.determine_state()
+        self.split_game.determine_state()
     
     def hand_to_emojis(self, hand: list[Card]) -> str:
         return ''.join([card.to_emoji() for card in hand])
@@ -274,9 +279,12 @@ class GameManager():
                 second_game: Game = self.cur_game
                 second_hand_emojis: str = player_hand_emojis
             s += f"{'▶️ ' if self.is_split else ''}{self.player_name} (Рука 1, ставка: `{first_game.bet}`):\n`{self.get_hand_score(first_game.player_hand)}` | {first_hand_emojis}\n"
+            s += f"State: `{first_game.state}`\n"
             s += self.get_game_ending_str(first_game.state, first_game.bet)
             s += f"{'▶️ ' if not self.is_split else ''}{self.player_name} (Рука 2, ставка: `{second_game.bet}`):\n`{self.get_hand_score(second_game.player_hand)}` | {second_hand_emojis}\n"
+            s += f"State: `{second_game.state}`\n"
             s += self.get_game_ending_str(second_game.state, second_game.bet)
+            s += f"\nManager state: `{self.state}`"
 
         return s
     
@@ -294,12 +302,11 @@ class Button(discord.ui.Button["View"]):
     async def callback(self, interaction: discord.Interaction["View"]) -> None:
         manager: GameManager = self.view.manager
 
-        if manager.state not in [Game.State.CAN_DOUBLE_DOWN, Game.State.CAN_SPLIT]:
-            for button in self.view.children:
-                if isinstance(button, DoubleButton):
-                    button.disabled = True
-                if isinstance(button, SplitButton) and manager.state != Game.State.CAN_SPLIT:
-                    button.disabled = True
+        for button in self.view.children:
+            if isinstance(button, DoubleButton):
+                button.disabled = manager.state not in [Game.State.CAN_DOUBLE_DOWN, Game.State.CAN_SPLIT]
+            elif isinstance(button, SplitButton):
+                button.disabled = manager.state != Game.State.CAN_SPLIT
 
         if manager.state in [Game.State.WIN, Game.State.LOSE, Game.State.TIE]:
             self.view.stop()
