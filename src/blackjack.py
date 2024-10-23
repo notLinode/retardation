@@ -279,12 +279,9 @@ class GameManager():
                 second_game: Game = self.cur_game
                 second_hand_emojis: str = player_hand_emojis
             s += f"{'▶️ ' if self.is_split else ''}{self.player_name} (Рука 1, ставка: `{first_game.bet}`):\n`{self.get_hand_score(first_game.player_hand)}` | {first_hand_emojis}\n"
-            s += f"State: `{first_game.state}`\n"
             s += self.get_game_ending_str(first_game.state, first_game.bet)
             s += f"{'▶️ ' if not self.is_split else ''}{self.player_name} (Рука 2, ставка: `{second_game.bet}`):\n`{self.get_hand_score(second_game.player_hand)}` | {second_hand_emojis}\n"
-            s += f"State: `{second_game.state}`\n"
             s += self.get_game_ending_str(second_game.state, second_game.bet)
-            s += f"\nManager state: `{self.state}`"
 
         return s
     
