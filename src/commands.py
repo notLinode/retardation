@@ -98,7 +98,7 @@ async def feed(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
 
         response: str = f"вау мне дали **{food_item}** и я {'получил' if food_satiety >= 0 else 'потерял'} `{abs(food_satiety)}` сытости {':drooling_face::drooling_face:' if food_satiety >= 40 else ''}\n"
         item: ShopItem = ShopItem(food_item, food_satiety, 0, 0, 0, 0, 0, 0)
-        response += await ai.generate_feeding_comment(AKASH_API_KEY, item)
+        response += await ai.generate_feeding_comment(AKASH_API_KEY, item, bot_vars, ai.CommentType.FEED)
 
         await message.channel.send(response)
 
@@ -115,7 +115,7 @@ async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
 
         response: str = f"меня подлечили с помощью **{item}** и я {'получил' if item_health >= 0 else 'нахуй потерял'} `{abs(item_health)}` здоровья {':heart:' if item_health >= 0 else ':broken_heart::broken_heart::broken_heart:'}\n"
         item_obj: ShopItem = ShopItem(item, 0, item_health, 0, 0, 0, 0, 0)
-        response += await ai.generate_feeding_comment(AKASH_API_KEY, item_obj)
+        response += await ai.generate_feeding_comment(AKASH_API_KEY, item_obj, bot_vars, ai.CommentType.HEAL)
         
         await message.channel.send(response)
 
@@ -168,7 +168,7 @@ async def buy_item(idx: int, channel: TextChannel, userid: int, bot_vars: BotVar
         bot_vars.add_health(item.health)
         bot_vars.add_satiety(item.satiety)
 
-        response += await ai.generate_feeding_comment(bot_vars.ai_key, item)
+        response += await ai.generate_feeding_comment(bot_vars.ai_key, item, bot_vars, ai.CommentType.SHOP)
         await channel.send(response)
 
     return item.is_bought

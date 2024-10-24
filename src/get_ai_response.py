@@ -1,5 +1,6 @@
 import openai
 
+from enum import Enum
 import logging
 from random import random
 import time
@@ -123,11 +124,30 @@ async def generate_shop_items(akash_api_key: str) -> list[ShopItem]:
 
     return shop_items
 
-async def generate_feeding_comment(akash_api_key: str, feeded_item: ShopItem) -> str:
+class CommentType(Enum):
+    SHOP = 1
+    FEED = 2
+    HEAL = 3
+
+async def generate_feeding_comment(
+        akash_api_key: str,
+        feeded_item: ShopItem,
+        bot_vars: BotVariables,
+        comment_type: CommentType = CommentType.SHOP
+        ) -> str:
     prompt: str = "Ты - участник казуальной интернет-переписки в дискорде под ником "
     prompt += f"invalid8074 (инвалид). Тебе только что скормили *{feeded_item.name}* и ты "
-    prompt += f"получил `{feeded_item.satiety}` к сытости и `{feeded_item.health}` к здоровью. "
-    prompt += "Как ты прокомментируешь это одним предложением? Тебе можно (но не необходимо) "
+    
+    match comment_type:
+        case CommentType.SHOP:
+            prompt += f"получил `{feeded_item.satiety}` к сытости и `{feeded_item.health}` к здоровью. "
+        case CommentType.FEED:
+            prompt += f"получил `{feeded_item.satiety}` к сытости. "
+        case CommentType.HEAL:
+            prompt += f"получил `{feeded_item.health}` к здоровью. "
+    
+    prompt += f"В сумме у тебя теперь `{bot_vars.satiety}`/100 сытости и `{bot_vars.health}`/100 здоровья. "
+    prompt += "Как ты прокомментируешь это? Тебе можно (но не необходимо) "
     prompt += "допускать орфографические ошибки, тебе МОЖНО (но не необходимо) МАТЕРИТЬСЯ."
 
     response: str = await get_response(akash_api_key, prompt)
