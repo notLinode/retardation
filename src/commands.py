@@ -12,29 +12,30 @@ from shop_buttons_view import *
 async def prompt(message: Message, AKASH_API_KEY: str) -> None:
     async with message.channel.typing():
         bot_msg: Message = await message.channel.send("✅\n")
-        chunk_buf: str = "" # TODO: make chunk_buf a list[str] type for optimization
+        chunk_buf: list[str] = []
         chunk_buf_len: int = 0
-        msg_len: int = 0
+        msg_len: int = len(bot_msg.content)
 
         for chunk in ai.stream_response(AKASH_API_KEY, message.content[8:]):
             if chunk is None:
                 break
 
-            chunk_buf += chunk
+            chunk_buf.append(chunk)
             chunk_len = len(chunk)
             chunk_buf_len += chunk_len
             msg_len += chunk_len
 
             if chunk_buf_len >= 200:
                 if msg_len >= 2000:
-                    bot_msg = await message.channel.send(chunk_buf)
+                    bot_msg = await message.channel.send("".join(chunk_buf))
                     msg_len = chunk_buf_len
-                bot_msg = await bot_msg.edit(content=bot_msg.content + chunk_buf)
-                chunk_buf = ""
+                else:
+                    bot_msg = await bot_msg.edit(content=bot_msg.content + "".join(chunk_buf))
+                chunk_buf.clear()
                 chunk_buf_len = 0
 
         if chunk_buf:
-            await bot_msg.edit(content=bot_msg.content + chunk_buf)
+            await bot_msg.edit(content=bot_msg.content + "".join(chunk_buf))
 
 async def set_message_interval(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
