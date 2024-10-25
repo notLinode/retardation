@@ -7,7 +7,6 @@ import logging
 from bot_variables import *
 import commands
 import get_ai_response as ai
-from shop_buttons_view import ShopView
 
 # Declare logger
 LOGGER = logging.getLogger("invalid")
