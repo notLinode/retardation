@@ -31,6 +31,7 @@ class BotVariables:
     health: float = 100.0
     litter_box_fullness: int = 0
     litter_box_timer: int = 60
+    time_of_death: int = 0
 
     def add_health(self, health: float) -> None:
         self.health += health
@@ -76,6 +77,18 @@ class BotVariables:
         item_1: ShopItem = ShopItem("Гоблинские бубуки", -30, 9, 1, 0, 0, 0, 0)
         item_2: ShopItem = ShopItem("Угощение", 50, 0, 2, 0, 0, 0, 0)
         self.shop_items = [item_1, item_2]
+
+    def revive(self, dont_reset_tokens: bool) -> None:
+        self.CREATED_AT = int(time.time())
+
+        self.health = 100.0
+        self.satiety = 100.0
+        self.litter_box_fullness = 0
+        self.litter_box_timer = 60
+        self.time_of_death = 0
+
+        if not dont_reset_tokens:
+            self.user_interaction_tokens.clear()
     
     def generate_dto(self) -> "BotVariablesDto":
         return BotVariablesDto(
@@ -92,6 +105,7 @@ class BotVariables:
             self.health,
             self.litter_box_fullness,
             self.litter_box_timer,
+            self.time_of_death,
             self.user_interaction_tokens.copy()
         )
     
@@ -118,6 +132,7 @@ class BotVariables:
                         health                         = float(row["health"]),
                         litter_box_fullness            = int(row["litter_box_fullness"]),
                         litter_box_timer               = int(row["litter_box_timer"]),
+                        time_of_death                  = int(row.get("time_of_death", 0)),
                         user_interaction_tokens        = eval(row["user_interaction_tokens"])
                     )
             return bot_vars
@@ -160,5 +175,6 @@ class BotVariablesDto:
     health: float
     litter_box_fullness: int
     litter_box_timer: int
+    time_of_death: int
 
     user_interaction_tokens: dict[int, list[int]] = field(default_factory=dict[int, list[int]])

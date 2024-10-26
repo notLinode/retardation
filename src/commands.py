@@ -1,5 +1,6 @@
-from discord import Message, Client, TextChannel
+from discord import Message, Client, TextChannel, Reaction
 
+import logging
 import time
 import random
 import re
@@ -8,6 +9,8 @@ import blackjack as bj
 from bot_variables import *
 import get_ai_response as ai
 from shop_buttons_view import *
+
+LOGGER = logging.getLogger(__name__)
 
 async def prompt(message: Message, AKASH_API_KEY: str) -> None:
     async with message.channel.typing():
@@ -352,3 +355,24 @@ async def automessage(
             bot_vars.stylized_bot_messages.append(automessage)
             while (len(bot_vars.stylized_bot_messages) > bot_vars.setting_own_message_memory):
                 bot_vars.stylized_bot_messages.pop(0)
+
+async def bot_death_notify(message: Message, bot_vars: BotVariables) -> None:
+    if not bot_vars.time_of_death:
+        bot_vars.time_of_death = int(time.time())
+
+    cant_revive_time: int = bot_vars.time_of_death + 3600
+    cant_revive_timestamp: str = f"<t:{cant_revive_time}:f>"
+
+    await message.channel.send(f"сука я сдох поставь пять чтобы я ВОСКРЕС\nменя можно воскресить без потери токенов до {cant_revive_timestamp}")
+
+async def try_revive(reaction: Reaction, bot_vars: BotVariables) -> None:
+    is_dead: bool = bot_vars.health <= 0
+    is_reaction_to_bots_message: bool = reaction.message.author.id == bot_vars.client.user.id
+    is_correct_emoji: bool = reaction.emoji == "5️⃣"
+
+    if is_dead and is_reaction_to_bots_message and is_correct_emoji:
+        can_rehabilitate: bool = int(time.time()) < (bot_vars.time_of_death + 3600)
+        bot_vars.revive(can_rehabilitate)
+
+        LOGGER.info(f"Bot is revived{' without losing tokens' if can_rehabilitate else ', all progress lost'}")
+        await reaction.message.channel.send(f"Я ВОСКРЕС{'' if can_rehabilitate else '. Весь прогресс был обнулён.'}")

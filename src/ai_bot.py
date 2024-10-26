@@ -25,8 +25,7 @@ handler.setFormatter(formatter)
 
 LOGGER.addHandler(handler)
 
-ai.LOGGER = LOGGER
-tasks.LOGGER = LOGGER
+ai.LOGGER = commands.LOGGER = tasks.LOGGER = LOGGER
 
 # Retrieve sensitive information from an unlisted file
 TOKEN: str
@@ -84,7 +83,7 @@ async def on_message(message: discord.Message):
         return
     
     if bot_vars.health <= 0:
-        await message.channel.send("сука я сдох поставь пять чтобы я ВОСКРЕС")
+        await commands.bot_death_notify(message, bot_vars)
         return
 
     await commands.process_tokens_info(message, bot_vars)
@@ -145,6 +144,10 @@ async def on_message(message: discord.Message):
             if message.author.guild_permissions.administrator:
                 bot_vars.user_interaction_tokens[message.author.id][0] = 9999
                 await message.channel.send("george floyd negroid cyberg technology activated")
+        
+        case ";kill":
+            if message.author.guild_permissions.administrator:
+                bot_vars.health = 0
 
         case _:
             await commands.automessage(message, AKASH_API_KEY, bot_vars, client)
@@ -153,15 +156,7 @@ async def on_message(message: discord.Message):
 async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
     global bot_vars
 
-    is_dead: bool = bot_vars.health <= 0
-    is_reaction_to_bots_message: bool = reaction.message.author.id == client.user.id
-    is_correct_emoji: bool = reaction.emoji == "5️⃣"
-
-    if is_dead and is_reaction_to_bots_message and is_correct_emoji:
-        bot_vars = BotVariables(shop_items=bot_vars.shop_items,
-                                shop_items_next_update_time=bot_vars.shop_items_next_update_time)
-        LOGGER.info("Bot is revived, all progress is lost")
-        await reaction.message.channel.send("Я ВОСКРЕС. Весь прогресс был обнулён.")
+    await commands.try_revive(reaction, bot_vars)
 
 
 # Run the bot
