@@ -1,12 +1,12 @@
 import logging.handlers
 import discord
 
-import asyncio
 import logging
 
 from bot_variables import *
 import commands
 import get_ai_response as ai
+import tasks
 
 # Declare logger
 LOGGER = logging.getLogger("invalid")
@@ -26,6 +26,7 @@ handler.setFormatter(formatter)
 LOGGER.addHandler(handler)
 
 ai.LOGGER = LOGGER
+tasks.LOGGER = LOGGER
 
 # Retrieve sensitive information from an unlisted file
 TOKEN: str
@@ -64,73 +65,14 @@ except Exception as e:
 bot_vars.ai_key = AKASH_API_KEY
 bot_vars.client = client
 
-# Create custom routines
-async def save_on_disk_task():
-    while True:
-        await asyncio.sleep(60.0)
-
-        async with asyncio.Lock():
-            try:
-                bot_vars.write_to_file("data/bot_vars.csv")
-                LOGGER.info("Saved bot_vars to a file")
-            except Exception as e:
-                LOGGER.error(f"Exception while writing to a file: {e}")
-
-async def hunger_task():
-    while True:
-        bot_vars.litter_box_timer -= 1
-
-        if bot_vars.litter_box_timer == 0:
-            bot_vars.add_litter(10)
-            bot_vars.litter_box_timer = 60 # +10 litter box fullness every hour
-
-        if bot_vars.litter_box_fullness >= 100:
-            bot_vars.add_health(-1.0)
-
-        if bot_vars.satiety > 100.0:
-            bot_vars.satiety -= 2.0
-            bot_vars.health -= 1
-        elif bot_vars.satiety > 0:
-            bot_vars.satiety -= 0.2 # -1 satiety every 5 minutes
-        else:
-            bot_vars.add_health(-1.0)
-
-        await asyncio.sleep(60.0)
-
-async def presence_task():
-    while True:
-        try:
-            presence: str = f"{'❤️' if int(bot_vars.health) > 10 else '💔'} {int(bot_vars.health)} "
-            presence += f"{'🍖' if int(bot_vars.satiety) > 50 else '🦴'} {int(bot_vars.satiety)} "
-            presence += f"💩 {bot_vars.litter_box_fullness}"
-
-            activity = discord.Activity(type=discord.ActivityType.playing, name=presence)
-            await client.change_presence(activity=activity)
-        except Exception as e:
-            LOGGER.error(f"Exception while changing presence: {e}")
-
-        await asyncio.sleep(10.0)
-
-async def update_shop_task():
-    while True:
-        try:
-            bot_vars.shop_items = await ai.generate_shop_items(AKASH_API_KEY)
-            bot_vars.shop_items_next_update_time = int(time.time()) + 3600
-            await asyncio.sleep(3600.0)
-        except Exception as e:
-            LOGGER.error(f"Exception while updating shop: {e}")
-            bot_vars.set_default_shop_items()
-            bot_vars.shop_items_next_update_time = int(time.time()) + 60
-            await asyncio.sleep(60.0)
-
 # Print a message when the bot is up
 @client.event
 async def on_ready():
     LOGGER.info(f'We have logged in as {client.user}')
-    client.loop.create_task(hunger_task())
-    client.loop.create_task(presence_task())
-    client.loop.create_task(update_shop_task())
-    client.loop.create_task(save_on_disk_task())
+    client.loop.create_task(tasks.hunger_task(bot_vars))
+    client.loop.create_task(tasks.presence_task(bot_vars))
+    client.loop.create_task(tasks.update_shop_task(bot_vars))
+    client.loop.create_task(tasks.save_on_disk_task(bot_vars))
     print("Bot is fully ready")
 
 # Declare commands
@@ -200,8 +142,8 @@ async def on_message(message: discord.Message):
             await commands.help(message)
         
         case ";gm-1":
-            if message.author.id == 285736507472347147:
-                bot_vars.user_interaction_tokens[285736507472347147][0] = 9999
+            if message.author.guild_permissions.administrator:
+                bot_vars.user_interaction_tokens[message.author.id][0] = 9999
                 await message.channel.send("george floyd negroid cyberg technology activated")
 
         case _:
@@ -220,7 +162,7 @@ async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
                                 shop_items_next_update_time=bot_vars.shop_items_next_update_time)
         LOGGER.info("Bot is revived, all progress is lost")
         await reaction.message.channel.send("Я ВОСКРЕС. Весь прогресс был обнулён.")
-        
+
 
 # Run the bot
 client.run(TOKEN, log_handler=handler)
