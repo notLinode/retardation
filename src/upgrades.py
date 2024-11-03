@@ -1,12 +1,7 @@
 import discord
 
 from dataclasses import dataclass, field
-from enum import Enum
 import time
-
-class _UpgradeType(Enum):
-    PERSONAL = 0
-    GLOBAL = 1
 
 
 @dataclass
@@ -15,10 +10,9 @@ class _Upgrade:
     cost: int
     name: str
     desc: str
-    TYPE: _UpgradeType
     is_owned: bool = False
 
-    def __str__(self) -> str:
+    def to_str(self, userid: int) -> str:
         s: str = f"**{self.name}** за {self.cost} 🪙: {self.desc}"
         return f"~~{s}~~" if self.is_owned else s
     
@@ -69,6 +63,7 @@ class _U_AfkTokens(_Upgrade):
             self.levels[userid] += 1
             self.is_owned = self.levels[userid] == self.MAX_LEVEL
 
+
 @dataclass
 class _U_Fubar(_Upgrade):
     expiration_time: int = 0
@@ -78,9 +73,9 @@ class _U_Fubar(_Upgrade):
         self.is_owned = int(time.time()) < self.expiration_time
         return self.is_owned
 
-    def __str__(self) -> str:
+    def to_str(self, userid: int) -> str:
         self.check_expiration()
-        return super().__str__()
+        return super().to_str(userid)
 
     def get_label(self, userid: int) -> str:
         self.check_expiration()
@@ -93,34 +88,31 @@ class _U_Fubar(_Upgrade):
             self.is_owned = True
             self.expiration_time = int(time.time()) + 3600
 
+
 _ALL_UPGRADES: list[_Upgrade] = [
     _Upgrade(
         u_id=0,
         name="🍗 ;feed",
         desc="Разблокирует команду `;feed` для всего сервера, с помощью которой можно кормить бота пользовательской едой.",
-        cost=50,
-        TYPE=_UpgradeType.GLOBAL
+        cost=50
     ),
     _Upgrade(
         u_id=1,
         name="🩷 ;heal",
         desc="Разблокирует команду `;heal` для всего сервера, с помощью которой можно лечить бота пользовательскими лекарствами.",
-        cost=50,
-        TYPE=_UpgradeType.GLOBAL
+        cost=50
     ),
     _U_AfkTokens(
         u_id=2,
         name="⌛ +1 час АФК токенов",
         desc="Прибавляет один час к максимальному количеству проведённых в АФК часов, за которые вы получаете токены. (По умолчанию - 3)",
-        cost=10,
-        TYPE=_UpgradeType.PERSONAL
+        cost=10
     ),
     _U_Fubar(
         u_id=3,
         name="👹 Ты ебанутый",
         desc="Добавляет \"ТЫ ЕБАНУТЫЙ\" к запросу сообщений инвалида и команде `;prompt` на час.",
-        cost=15,
-        TYPE=_UpgradeType.GLOBAL
+        cost=15
     )
     ]
 
@@ -147,18 +139,8 @@ class Upgrades:
     
     def to_str(self, userid: int) -> str:
         s: str = ""
-
         for upgrade in self.upgrades:
-            s += "- "
-
-            match upgrade.TYPE:
-                case _UpgradeType.GLOBAL:
-                    s += upgrade.__str__()
-                case _UpgradeType.PERSONAL:
-                    s += upgrade.to_str(userid)
-
-            s += "\n"
-        
+            s += f"- {upgrade.to_str(userid)}\n"
         return s
 
     def can_feed(self) -> bool:
@@ -188,7 +170,6 @@ class _UpgradeButton(discord.ui.Button):
         is_wrong_user: bool = interaction.user.id != self.view.userid
         if is_wrong_user:
             await interaction.response.send_message("Это не ваше меню.", ephemeral=True)
-
         return not is_wrong_user
 
     async def callback(self, interaction: discord.Interaction["UpgradesView"]):
