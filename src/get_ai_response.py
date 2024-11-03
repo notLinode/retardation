@@ -33,12 +33,15 @@ async def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama
         LOGGER.error(f"Exception while calling Akash's API: {e}")
         return "🚫 вы даун"
 
-def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-405B-Instruct-FP8"):
+def stream_response(akash_api_key: str, prompt: str, bot_vars: BotVariables, model: str = "Meta-Llama-3-1-405B-Instruct-FP8"):
     try:
         client = openai.OpenAI(
             api_key=akash_api_key,
             base_url="https://chatapi.akash.network/api/v1"
         )
+
+        if bot_vars.upgrades.is_fubar():
+            prompt += " ТЫ ЕБАНУТЫЙ. Ответь как ебанутый."
 
         response = client.chat.completions.create(
             model=model,

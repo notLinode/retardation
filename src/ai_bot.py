@@ -96,7 +96,7 @@ async def on_message(message: discord.Message):
 
     match msg_first_word:
         case ";prompt":
-            await commands.prompt(message, AKASH_API_KEY)
+            await commands.prompt(message, AKASH_API_KEY, bot_vars)
 
         case ";set-message-interval":
             await commands.set_message_interval(message, bot_vars)
