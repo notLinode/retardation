@@ -70,7 +70,7 @@ async def on_ready():
     LOGGER.info(f'We have logged in as {client.user}')
     client.loop.create_task(tasks.hunger_task(bot_vars))
     client.loop.create_task(tasks.presence_task(bot_vars))
-    #client.loop.create_task(tasks.update_shop_task(bot_vars)) TODO
+    client.loop.create_task(tasks.update_shop_task(bot_vars))
     client.loop.create_task(tasks.save_on_disk_task(bot_vars))
     print("Bot is fully ready")
 
