@@ -89,7 +89,7 @@ async def on_message(message: discord.Message):
     await commands.process_tokens_info(message, bot_vars)
 
     try:
-        msg_first_word: str = message.content.split()[0]
+        msg_first_word: str = message.content.split()[0].lower()
     except IndexError:
         LOGGER.info(f"Tried splitting user message but it has no text content")
         return
