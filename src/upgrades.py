@@ -42,6 +42,10 @@ class _U_AfkTokens(_Upgrade):
     COST_PER_LEVEL: int = 10
     levels: dict[int, int] = field(default_factory=dict[int, int])  # Key - userid, value - level
 
+    def get_label(self, userid: int) -> str:
+        self.is_owned = self.get_level(userid) >= self.MAX_LEVEL
+        return super().get_label(userid)
+
     def get_level(self, userid: int) -> int:
         if userid not in self.levels.keys():
             self.levels[userid] = 0
