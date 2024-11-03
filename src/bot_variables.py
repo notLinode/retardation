@@ -6,6 +6,7 @@ import os
 import time
 
 from shop_item import *
+from upgrades import *
 
 @dataclass
 class BotVariables:
@@ -39,20 +40,21 @@ class BotVariables:
             self.health = 100.0
         elif self.health < 0:
             self.health = 0
-    
+
     def add_satiety(self, satiety: float) -> None:
         self.satiety += satiety
         if self.satiety > 200.0:
             self.satiety = 200.0
         elif self.satiety < 0:
             self.satiety = 0
-    
+
     def add_litter(self, litter: int) -> None:
         self.litter_box_fullness += litter
         if self.litter_box_fullness > 100:
             self.litter_box_fullness = 100
         elif self.litter_box_fullness < 0:
             self.litter_box_fullness = 0
+
 
     user_interaction_tokens: dict[int, list[int]] = field(default_factory=dict[int, list[int]]) # key - userid;
                                                                                                 # list[0] - tokens (max 3);
@@ -73,6 +75,8 @@ class BotVariables:
 
         return s
     
+    upgrades: Upgrades = Upgrades()
+    
     def set_default_shop_items(self) -> None:
         item_1: ShopItem = ShopItem("Гоблинские бубуки", -30, 9, 1, 0, 0, 0, 0)
         item_2: ShopItem = ShopItem("Угощение", 50, 0, 2, 0, 0, 0, 0)
@@ -89,6 +93,7 @@ class BotVariables:
 
         if not dont_reset_tokens:
             self.user_interaction_tokens.clear()
+            self.upgrades = Upgrades()
     
     def generate_dto(self) -> "BotVariablesDto":
         return BotVariablesDto(
@@ -106,7 +111,10 @@ class BotVariables:
             self.litter_box_fullness,
             self.litter_box_timer,
             self.time_of_death,
-            self.user_interaction_tokens.copy()
+            self.user_interaction_tokens.copy(),
+            self.upgrades.can_feed(),
+            self.upgrades.can_heal(),
+            self.upgrades.upgrades[2].levels.copy()
         )
     
     @classmethod
@@ -116,6 +124,12 @@ class BotVariables:
                 reader = csv.DictReader(file)
                 reader.line_num
                 for row in reader:
+                    upgrades: Upgrades = Upgrades().reinstantiate(
+                        is_feed_bought   = row.get("is_feed_bought", "False") == "True",
+                        is_heal_bought   = row.get("is_heal_bought", "False") == "True",
+                        afk_token_levels = eval(row.get("afk_token_levels", "{}"))
+                    )
+
                     bot_vars = cls(
                         CREATED_AT                     = int(row.get("CREATED_AT", int(time.time()))),
                         SETTING_MESSAGE_INTERVAL_MIN   = int(row["SETTING_MESSAGE_INTERVAL_MIN"]),
@@ -133,7 +147,8 @@ class BotVariables:
                         litter_box_fullness            = int(row["litter_box_fullness"]),
                         litter_box_timer               = int(row["litter_box_timer"]),
                         time_of_death                  = int(row.get("time_of_death", 0)),
-                        user_interaction_tokens        = eval(row["user_interaction_tokens"])
+                        user_interaction_tokens        = eval(row["user_interaction_tokens"]),
+                        upgrades                       = upgrades
                     )
             return bot_vars
         except Exception as e:
@@ -177,4 +192,8 @@ class BotVariablesDto:
     litter_box_timer: int
     time_of_death: int
 
-    user_interaction_tokens: dict[int, list[int]] = field(default_factory=dict[int, list[int]])
+    user_interaction_tokens: dict[int, list[int]]
+
+    is_feed_bought: bool
+    is_heal_bought: bool
+    afk_token_levels: dict[int, int]

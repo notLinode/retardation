@@ -9,6 +9,7 @@ import blackjack as bj
 from bot_variables import *
 import get_ai_response as ai
 from shop_buttons_view import *
+from upgrades import *
 
 LOGGER = logging.getLogger(__name__)
 
@@ -238,6 +239,16 @@ async def pay(message: Message, bot_vars: BotVariables) -> None:
 
         await message.channel.send(f"Вы успешно перевели {payment} :coin: на счёт <@{recipient_id_str}>.")
 
+async def upgrades(message: Message, bot_vars: BotVariables) -> None:
+    async with message.channel.typing():
+        upgrades_view: UpgradesView = UpgradesView(
+            upgrades=bot_vars.upgrades,
+            userid=message.author.id,
+            user_token_info=bot_vars.user_interaction_tokens[message.author.id]
+            )
+
+        await message.channel.send(upgrades_view.to_str(), view=upgrades_view)
+
 async def blackjack(message: Message, bot_vars: BotVariables) -> None:
     async with message.channel.typing():
         token_info: list[int] = bot_vars.user_interaction_tokens[message.author.id]
@@ -274,25 +285,24 @@ async def blackjack(message: Message, bot_vars: BotVariables) -> None:
 
 async def help(message: Message) -> None:
     async with message.channel.typing():
-        help_msg: str = "```"
-        help_msg += "\n;prompt [Сообщение: str] - обратиться к Llama 3.1 405B.\n"
-        help_msg += "\n;set-message-interval [Интервал: int | \"random\"] - поставить количество пользовательских сообщений, после которого бот сам что-то напишет.\n"
-        help_msg += "\n;set-own-message-memory [Память: int] - поставить количество собственных сообщений бота, которые он запомнит и учтёт при написании следующего своего сообщения.\n"
-        help_msg += "\n;clear-memory - Очищает память бота от своих и пользовательских сообщений.\n"
-        help_msg += "\n;ping - pong.\n"
-        help_msg += "\n------====* 💸 ЭКОНОМИКА 💸 *====------\n"
-        help_msg += "\n;tokens (;tok) [@Ник - mention | None] - Показывает ваши токены (либо токены указанного человека).\n"
-        help_msg += "\n;pay [@Ник - mention, Сумма - int | \"all\"] - Переводит токены с вашего счета на чужой.\n"
-        help_msg += "\n------====* КОМАНДЫ УХОДА ЗА БОТОМ *====------\n"
-        help_msg += "\n;status - Показывает состояние бота и количество ваших токенов.\n"
-        help_msg += "\n;shop - Показывает магазин. Магазин обновляется каждый час.\n"
-        help_msg += "\n;buy [Номер: int] - Покупает вещь из магазина и даёт её боту.\n"
-        help_msg += "\n;feed [Еда: str] - Кормит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
-        help_msg += "\n;heal [Лекарство: str] - Лечит бота тем, что вы укажете в команде. Тратит 1 токен при использовании.\n"
-        help_msg += "\n;clean-litter - Очищает лоток бота.\n"
-        help_msg += "\n------====* ИГРУШКИ)) *====------\n"
-        help_msg += "\n;blackjack (;bj) [Ставка: int] - Сыграть в блэкджек.\n"
-        help_msg += "```"
+        help_msg: str = "## 🤖 Общение с ботом 🤖\n"
+        help_msg += "- `;prompt [Сообщение: str]` - обратиться к Llama 3.1 405B.\n"
+        help_msg += "- `;set-message-interval [Интервал: int | \"random\"]` - поставить количество пользовательских сообщений, после которых бот сам что-то напишет.\n"
+        help_msg += "- `;set-own-message-memory [Память: int]` - поставить количество собственных сообщений бота, которые он запомнит и учтёт при написании следующего своего сообщения.\n"
+        help_msg += "- `;clear-memory` - Очищает память бота от своих и пользовательских сообщений.\n"
+        help_msg += "- `;ping` - pong.\n"
+        help_msg += "## 💸 Экономика 💸\n"
+        help_msg += "- `;tokens (;tok) [@Ник - mention | None]` - Показывает ваши токены (либо токены указанного человека).\n"
+        help_msg += "- `;pay [@Ник - mention, Сумма - int | \"all\"]` - Переводит токены с вашего счета на чужой.\n"
+        help_msg += "- `;upgrade (;upgrades)` - Открывает меню апгрейдов.\n"
+        help_msg += "- `;blackjack (;bj) [Ставка: int | \"all\"]` - Сыграть в блэкджек.\n"
+        help_msg += "## 🧼 Уход за ботом 🧼\n"
+        help_msg += "- `;status` - Показывает состояние бота и количество ваших токенов.\n"
+        help_msg += "- `;shop` - Показывает магазин. Магазин обновляется каждый час.\n"
+        help_msg += "- `;buy [Номер: int]` - Покупает вещь из магазина и даёт её боту.\n"
+        help_msg += "- `;feed [Еда: str]` - Кормит бота тем, что вы укажете в команде. Для использования необходим апгрейд. Тратит 1 токен при использовании.\n"
+        help_msg += "- `;heal [Лекарство: str]` - Лечит бота тем, что вы укажете в команде. Для использования необходим апгрейд. Тратит 1 токен при использовании.\n"
+        help_msg += "- `;clean-litter` - Очищает лоток бота.\n"
 
         await message.channel.send(help_msg)
 
@@ -314,7 +324,8 @@ async def process_tokens_info(message: Message, bot_vars: BotVariables) -> None:
 
     time_since_last_message: int = int(time.time()) - bot_vars.user_interaction_tokens[userid][2]
     if time_since_last_message >= 3600:
-        bot_vars.user_interaction_tokens[userid][0] += min(3, time_since_last_message // 3600) # Can't earn more than 3 tokens by idling
+        max_afk_hours: int = bot_vars.upgrades.get_max_afk_hours(message.author.id)
+        bot_vars.user_interaction_tokens[userid][0] += min(max_afk_hours, time_since_last_message // 3600)
         await message.add_reaction("🪙")
     
     bot_vars.user_interaction_tokens[userid][2] = int(time.time())

@@ -70,7 +70,7 @@ async def on_ready():
     LOGGER.info(f'We have logged in as {client.user}')
     client.loop.create_task(tasks.hunger_task(bot_vars))
     client.loop.create_task(tasks.presence_task(bot_vars))
-    client.loop.create_task(tasks.update_shop_task(bot_vars))
+    #client.loop.create_task(tasks.update_shop_task(bot_vars)) TODO
     client.loop.create_task(tasks.save_on_disk_task(bot_vars))
     print("Bot is fully ready")
 
@@ -108,10 +108,12 @@ async def on_message(message: discord.Message):
             await commands.clear_memory(message, bot_vars)
 
         case ";feed":
-            await commands.feed(message, AKASH_API_KEY, bot_vars)
+            if bot_vars.upgrades.can_feed():
+                await commands.feed(message, AKASH_API_KEY, bot_vars)
         
         case ";heal":
-            await commands.heal(message, AKASH_API_KEY, bot_vars)
+            if bot_vars.upgrades.can_heal():
+                await commands.heal(message, AKASH_API_KEY, bot_vars)
         
         case ";shop":
             await commands.shop(message, AKASH_API_KEY, bot_vars)
@@ -130,6 +132,9 @@ async def on_message(message: discord.Message):
         
         case ";pay":
             await commands.pay(message, bot_vars)
+        
+        case ";upgrades" | ";upgrade":
+            await commands.upgrades(message, bot_vars)
         
         case ";blackjack" | ";bj":
             await commands.blackjack(message, bot_vars)
