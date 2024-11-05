@@ -57,9 +57,10 @@ class _U_AfkTokens(_Upgrade):
         return f"~~{s}~~" if self.is_owned else s
     
     def buy(self, token_info: list[int], userid: int) -> None:
-        can_buy: bool = (self.cost <= token_info[0]) and not self.is_owned
+        cost: int = self.get_cost(userid)
+        can_buy: bool = (cost <= token_info[0]) and not self.is_owned
         if can_buy:
-            token_info[0] -= self.cost
+            token_info[0] -= cost
             self.levels[userid] += 1
             self.is_owned = self.levels[userid] == self.MAX_LEVEL
 
