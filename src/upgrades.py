@@ -175,7 +175,7 @@ class _UpgradeButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction["UpgradesView"]):
         self.upgrade.buy(self.view.user_token_info, self.view.userid)
-        self.disabled = self.upgrade.is_owned
+        self.disabled = (self.cost > self.view.user_token_info[0]) and self.upgrade.is_owned
         self.label = self.upgrade.get_label(self.view.userid)
 
         await interaction.response.edit_message(
@@ -200,7 +200,7 @@ class UpgradesView(discord.ui.View):
             self.add_item(_UpgradeButton(
                 upgrade=upgrade,
                 label=upgrade.get_label(userid),
-                disabled=(upgrade.cost > user_token_info[0]) or upgrade.is_owned
+                disabled=(upgrade.get_cost(userid) > user_token_info[0]) or upgrade.is_owned
             ))
     
     def to_str(self) -> str:
