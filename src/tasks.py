@@ -7,9 +7,12 @@ import discord
 from bot_variables import BotVariables
 import get_ai_response as ai
 
+
+bot_vars: BotVariables
 LOGGER = logging.getLogger(__name__)
 
-async def save_on_disk_task(bot_vars: BotVariables):
+
+async def save_on_disk_task():
     while True:
         await asyncio.sleep(60.0)
 
@@ -20,7 +23,8 @@ async def save_on_disk_task(bot_vars: BotVariables):
             except Exception as e:
                 LOGGER.error(f"Exception while writing to a file: {e}")
 
-async def hunger_task(bot_vars: BotVariables):
+
+async def hunger_task():
     while True:
         bot_vars.litter_box_timer -= 1
 
@@ -41,7 +45,8 @@ async def hunger_task(bot_vars: BotVariables):
 
         await asyncio.sleep(60.0)
 
-async def presence_task(bot_vars: BotVariables):
+
+async def presence_task():
     while True:
         try:
             presence: str = f"{'❤️' if int(bot_vars.health) > 10 else '💔'} {int(bot_vars.health)} "
@@ -55,7 +60,8 @@ async def presence_task(bot_vars: BotVariables):
 
         await asyncio.sleep(10.0)
 
-async def update_shop_task(bot_vars: BotVariables):
+
+async def update_shop_task():
     while True:
         try:
             bot_vars.shop_items = await ai.generate_shop_items(bot_vars.ai_key)

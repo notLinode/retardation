@@ -1,12 +1,13 @@
-import logging.handlers
 import discord
 
 import logging
+import logging.handlers
 
-from bot_variables import *
+from bot_variables import BotVariables
 import commands
 import get_ai_response as ai
 import tasks
+
 
 # Declare logger
 LOGGER = logging.getLogger("invalid")
@@ -15,7 +16,7 @@ LOGGER.setLevel(logging.INFO)
 handler = logging.handlers.RotatingFileHandler(
     filename="discord.log",
     encoding="utf-8",
-    maxBytes=33_554_432, # 32 MiB
+    maxBytes=33_554_432,  # 32 MiB
     backupCount=5,
 )
 
@@ -26,6 +27,7 @@ handler.setFormatter(formatter)
 LOGGER.addHandler(handler)
 
 ai.LOGGER = commands.LOGGER = tasks.LOGGER = LOGGER
+
 
 # Retrieve sensitive information from an unlisted file
 TOKEN: str
@@ -38,6 +40,7 @@ with open("tokens.txt", "r") as file:
 
 LOGGER.info("Read tokens from file")
 
+
 # Declare the bot
 intents = discord.Intents.default()
 intents.guild_typing = True
@@ -47,6 +50,7 @@ intents.guild_reactions = True
 client = discord.Client(intents=intents)
 
 LOGGER.info("Declared Discord client")
+
 
 # Read saved info from a file if it exists
 bot_vars: BotVariables
@@ -64,15 +68,19 @@ except Exception as e:
 bot_vars.ai_key = AKASH_API_KEY
 bot_vars.client = client
 
+commands.bot_vars = tasks.bot_vars = bot_vars
+
+
 # Print a message when the bot is up
 @client.event
 async def on_ready():
     LOGGER.info(f'We have logged in as {client.user}')
-    client.loop.create_task(tasks.hunger_task(bot_vars))
-    client.loop.create_task(tasks.presence_task(bot_vars))
-    client.loop.create_task(tasks.update_shop_task(bot_vars))
-    client.loop.create_task(tasks.save_on_disk_task(bot_vars))
+    client.loop.create_task(tasks.hunger_task())
+    client.loop.create_task(tasks.presence_task())
+    client.loop.create_task(tasks.update_shop_task())
+    client.loop.create_task(tasks.save_on_disk_task())
     print("Bot is fully ready")
+
 
 # Declare commands
 @client.event
@@ -83,10 +91,10 @@ async def on_message(message: discord.Message):
         return
     
     if bot_vars.health <= 0:
-        await commands.bot_death_notify(message, bot_vars)
+        await commands.bot_death_notify(message)
         return
 
-    await commands.process_tokens_info(message, bot_vars)
+    await commands.process_tokens_info(message)
 
     try:
         msg_first_word: str = message.content.split()[0].lower()
@@ -96,48 +104,48 @@ async def on_message(message: discord.Message):
 
     match msg_first_word:
         case ";prompt":
-            await commands.prompt(message, AKASH_API_KEY, bot_vars)
+            await commands.prompt(message)
 
         case ";set-message-interval":
-            await commands.set_message_interval(message, bot_vars)
+            await commands.set_message_interval(message)
         
         case ";set-own-message-memory":
-            await commands.set_own_message_memory(message, bot_vars)
+            await commands.set_own_message_memory(message)
         
         case ";clear-memory":
-            await commands.clear_memory(message, bot_vars)
+            await commands.clear_memory(message)
 
         case ";feed":
             if bot_vars.upgrades.can_feed():
-                await commands.feed(message, AKASH_API_KEY, bot_vars)
+                await commands.feed(message)
         
         case ";heal":
             if bot_vars.upgrades.can_heal():
-                await commands.heal(message, AKASH_API_KEY, bot_vars)
+                await commands.heal(message)
         
         case ";shop":
-            await commands.shop(message, AKASH_API_KEY, bot_vars)
+            await commands.shop(message)
         
         case ";buy":
-            await commands.buy(message, bot_vars)
+            await commands.buy(message)
 
         case ";clean-litter" | ";clean-litter-box":
-            await commands.clean_litter(message, bot_vars)
+            await commands.clean_litter(message)
 
         case ";status":
-            await commands.status(message, bot_vars)
+            await commands.status(message)
 
         case ";tokens" | ";tok":
-            await commands.tokens(message, bot_vars)
+            await commands.tokens(message)
         
         case ";pay":
-            await commands.pay(message, bot_vars)
+            await commands.pay(message)
         
         case ";upgrades" | ";upgrade":
-            await commands.upgrades(message, bot_vars)
+            await commands.upgrades(message)
         
         case ";blackjack" | ";bj":
-            await commands.blackjack(message, bot_vars)
+            await commands.blackjack(message)
 
         case ";ping":
             await message.channel.send('pong')
@@ -155,13 +163,12 @@ async def on_message(message: discord.Message):
                 bot_vars.health = 0
 
         case _:
-            await commands.automessage(message, AKASH_API_KEY, bot_vars, client)
+            await commands.automessage(message)
+
 
 @client.event
 async def on_reaction_add(reaction: discord.Reaction, user: discord.User):
-    global bot_vars
-
-    await commands.try_revive(reaction, bot_vars)
+    await commands.try_revive(reaction)
 
 
 # Run the bot

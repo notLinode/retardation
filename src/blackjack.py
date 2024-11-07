@@ -1,8 +1,8 @@
 import discord
 
-import asyncio
 from enum import Enum
 import random
+
 
 CARD_EMOJIS: tuple[str] = (
     "<:Ace:1297849594398642256>",   "<:Two:1297849617165320245>",   "<:Three:1297849668411199560>",
@@ -11,7 +11,8 @@ CARD_EMOJIS: tuple[str] = (
     "<:Ten:1297849612962496512>",   "<:Jack:1297849601663041579>",  "<:Queen:1297849607212236830>",
     "<:King:1297849603563196417>"
 )
- 
+
+
 class Card(Enum):
     ACE = 1
     TWO = 2
@@ -30,8 +31,10 @@ class Card(Enum):
     def to_emoji(self) -> str:
         return CARD_EMOJIS[self.value-1]
 
+
 def get_random_card() -> Card:
     return Card(int(random.random() * 13) + 1)
+
 
 class Game():
     class State(Enum):
@@ -163,6 +166,7 @@ class Game():
             case self.State.TIE:
                 self.token_info[0] += self.bet
 
+
 class GameManager():
     player_userid: int
     player_name: str
@@ -284,7 +288,8 @@ class GameManager():
             s += self.get_game_ending_str(second_game.state, second_game.bet)
 
         return s
-    
+
+
 class Button(discord.ui.Button["View"]):
     def __init__(self, label: str, style: discord.ButtonStyle) -> None:
         super().__init__(label=label, style=style)
@@ -310,10 +315,12 @@ class Button(discord.ui.Button["View"]):
         
         await interaction.response.edit_message(content=str(manager), view=self.view)
 
+
 class HitButton(Button):
     async def callback(self, interaction: discord.Interaction["View"]) -> None:
         await self.view.manager.hit()
         await super().callback(interaction)
+
 
 class DoubleButton(Button):
     def __init__(self, label: str, style: discord.ButtonStyle, can_double: bool) -> None:
@@ -324,6 +331,7 @@ class DoubleButton(Button):
         await self.view.manager.double()
         await super().callback(interaction)
 
+
 class SplitButton(Button):
     def __init__(self, label: str, style: discord.ButtonStyle, can_split: bool) -> None:
         super().__init__(label, style)
@@ -333,10 +341,12 @@ class SplitButton(Button):
         await self.view.manager.split()
         await super().callback(interaction)
 
+
 class StandButton(Button):
     async def callback(self, interaction: discord.Interaction["View"]) -> None:
         await self.view.manager.stand()
         await super().callback(interaction)
+
 
 class View(discord.ui.View):
     children: list[Button]

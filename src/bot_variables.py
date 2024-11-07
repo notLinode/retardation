@@ -5,8 +5,9 @@ from dataclasses import asdict, dataclass, field, fields
 import os
 import time
 
-from shop_item import *
-from upgrades import *
+from shop_item import ShopItem
+from upgrades import Upgrades
+
 
 @dataclass
 class BotVariables:
@@ -56,13 +57,15 @@ class BotVariables:
             self.litter_box_fullness = 0
 
 
-    user_interaction_tokens: dict[int, list[int]] = field(default_factory=dict[int, list[int]]) # key - userid;
-                                                                                                # list[0] - tokens (max 3);
-                                                                                                # list[1] - messages until next token;
-                                                                                                # list[2] - time of last message
+    user_interaction_tokens: dict[int, list[int]] = field(default_factory=dict[int, list[int]])  # key - userid;
+                                                                                                 # list[0] - tokens (max 3);
+                                                                                                 # list[1] - messages until next token;
+                                                                                                 # list[2] - time of last message
 
     shop_items: list[ShopItem] = field(default_factory=list[ShopItem])
     shop_items_next_update_time: int = 0
+    
+    upgrades: Upgrades = Upgrades()
 
     def get_shop_items_str(self) -> str:
         s = ""
@@ -74,8 +77,6 @@ class BotVariables:
         s += f"\n⏳ До обновления магазина `{mins_until_update}` минут."
 
         return s
-    
-    upgrades: Upgrades = Upgrades()
     
     def set_default_shop_items(self) -> None:
         item_1: ShopItem = ShopItem("Гоблинские бубуки", -30, 9, 1, 0, 0, 0, 0)
@@ -95,8 +96,8 @@ class BotVariables:
             self.user_interaction_tokens.clear()
             self.upgrades = Upgrades()
     
-    def generate_dto(self) -> "BotVariablesDto":
-        return BotVariablesDto(
+    def generate_dto(self) -> "_BotVariablesDto":
+        return _BotVariablesDto(
             self.CREATED_AT,
             self.SETTING_MESSAGE_INTERVAL_MIN,
             self.SETTING_MESSAGE_INTERVAL_MAX,
@@ -160,11 +161,11 @@ class BotVariables:
         if not os.path.exists(dir_path):
             os.makedirs(dir_path, exist_ok=True)
         
-        bot_vars_dto: BotVariablesDto = self.generate_dto()
+        bot_vars_dto: _BotVariablesDto = self.generate_dto()
         
         try:
             with open(writepath, "w+") as file:
-                flds = [fld.name for fld in fields(BotVariablesDto)]
+                flds = [fld.name for fld in fields(_BotVariablesDto)]
                 writer = csv.DictWriter(file, flds)
 
                 writer.writeheader()
@@ -172,8 +173,9 @@ class BotVariables:
         except Exception as e:
             raise e
 
+
 @dataclass
-class BotVariablesDto:
+class _BotVariablesDto:
     CREATED_AT: int
 
     SETTING_MESSAGE_INTERVAL_MIN: int

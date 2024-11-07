@@ -1,4 +1,4 @@
-from discord import Message, Client, TextChannel, Reaction
+from discord import Message, TextChannel, Reaction
 
 import logging
 import time
@@ -6,21 +6,29 @@ import random
 import re
 
 import blackjack as bj
-from bot_variables import *
+from bot_variables import BotVariables
 import get_ai_response as ai
-from shop_buttons_view import *
-from upgrades import *
+from shop_item import ShopItem
+from shop_view import ShopView
+from upgrades import UpgradesView
 
+
+bot_vars: BotVariables
 LOGGER = logging.getLogger(__name__)
 
-async def prompt(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
+
+async def prompt(message: Message) -> None:
     async with message.channel.typing():
+        prompt: str = message.content[8:]
+        if bot_vars.upgrades.is_fubar():
+            prompt += "\n\nДополнительная инструкция: ТЫ ЕБАНУТЫЙ. Ответь как ебанутый."
+
         bot_msg: Message = await message.channel.send("✅\n")
         chunk_buf: list[str] = []
         chunk_buf_len: int = 0
         msg_len: int = len(bot_msg.content)
 
-        for chunk in ai.stream_response(AKASH_API_KEY, message.content[8:], bot_vars):
+        for chunk in ai.stream_response(bot_vars.ai_key, prompt):
             if chunk is None:
                 break
 
@@ -41,7 +49,8 @@ async def prompt(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -
         if chunk_buf:
             await bot_msg.edit(content=bot_msg.content + "".join(chunk_buf))
 
-async def set_message_interval(message: Message, bot_vars: BotVariables) -> None:
+
+async def set_message_interval(message: Message) -> None:
     async with message.channel.typing():
         interval_str: str = message.content[22:].lower()
         
@@ -69,7 +78,8 @@ async def set_message_interval(message: Message, bot_vars: BotVariables) -> None
         
         await message.channel.send(f":white_check_mark: Интервал между сообщениями бота установлен на `{bot_vars.setting_message_interval}` пользовательских сообщений.")
 
-async def set_own_message_memory(message: Message, bot_vars: BotVariables) -> None:
+
+async def set_own_message_memory(message: Message) -> None:
     async with message.channel.typing():
         memory: int = int(message.content[24:])
 
@@ -83,13 +93,15 @@ async def set_own_message_memory(message: Message, bot_vars: BotVariables) -> No
 
         await message.channel.send(f":white_check_mark: Память собственных сообщений бота установлена на `{bot_vars.setting_own_message_memory}` сообщений.")
 
-async def clear_memory(message: Message, bot_vars: BotVariables) -> None:
+
+async def clear_memory(message: Message) -> None:
     async with message.channel.typing():
         bot_vars.recent_messages.clear()
         bot_vars.stylized_bot_messages.clear()
         await message.channel.send(f":white_check_mark: я всё заббыл нахуй")
 
-async def feed(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
+
+async def feed(message: Message) -> None:
     async with message.channel.typing():
         if bot_vars.user_interaction_tokens[message.author.id][0] <= 0:
             await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 6 сообщений.")
@@ -97,16 +109,17 @@ async def feed(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
         bot_vars.user_interaction_tokens[message.author.id][0] -= 1
         
         food_item: str = message.content[6:]
-        food_satiety: int = await ai.generate_food_satiety(AKASH_API_KEY, food_item)
+        food_satiety: int = await ai.generate_food_satiety(bot_vars.ai_key, food_item)
         bot_vars.add_satiety(float(food_satiety))
 
         response: str = f"вау мне дали **{food_item}** и я {'получил' if food_satiety >= 0 else 'потерял'} `{abs(food_satiety)}` сытости {':drooling_face::drooling_face:' if food_satiety >= 40 else ''}\n"
         item: ShopItem = ShopItem(food_item, food_satiety, 0, 0, 0, 0, 0, 0)
-        response += await ai.generate_feeding_comment(AKASH_API_KEY, item, bot_vars, ai.CommentType.FEED)
+        response += await ai.generate_feeding_comment(bot_vars.ai_key, item, bot_vars, ai.CommentType.FEED)
 
         await message.channel.send(response)
 
-async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
+
+async def heal(message: Message) -> None:
     async with message.channel.typing():
         if bot_vars.user_interaction_tokens[message.author.id][0] <= 0:
             await message.channel.send(":prohibited: У вас нет токенов взаимодействия. Они выдаются каждые 6 сообщений.")
@@ -114,16 +127,17 @@ async def heal(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> 
         bot_vars.user_interaction_tokens[message.author.id][0] -= 1
 
         item: str = message.content[6:]
-        item_health: int = await ai.generate_item_health(AKASH_API_KEY, item)
+        item_health: int = await ai.generate_item_health(bot_vars.ai_key, item)
         bot_vars.add_health(float(item_health))
 
         response: str = f"меня подлечили с помощью **{item}** и я {'получил' if item_health >= 0 else 'нахуй потерял'} `{abs(item_health)}` здоровья {':heart:' if item_health >= 0 else ':broken_heart::broken_heart::broken_heart:'}\n"
         item_obj: ShopItem = ShopItem(item, 0, item_health, 0, 0, 0, 0, 0)
-        response += await ai.generate_feeding_comment(AKASH_API_KEY, item_obj, bot_vars, ai.CommentType.HEAL)
+        response += await ai.generate_feeding_comment(bot_vars.ai_key, item_obj, bot_vars, ai.CommentType.HEAL)
         
         await message.channel.send(response)
 
-async def clean_litter(message: Message, bot_vars: BotVariables) -> None:
+
+async def clean_litter(message: Message) -> None:
     async with message.channel.typing():
         if bot_vars.litter_box_fullness > 0:
             bonus_tokens: int = bot_vars.litter_box_fullness // 10
@@ -133,14 +147,19 @@ async def clean_litter(message: Message, bot_vars: BotVariables) -> None:
         else:   
             await message.channel.send("лоток уже чист....")
 
-async def shop(message: Message, AKASH_API_KEY: str, bot_vars: BotVariables) -> None:
+
+async def shop(message: Message) -> None:
     async with message.channel.typing():
         if not bot_vars.get_shop_items_str():
-            bot_vars.shop_items = await ai.generate_shop_items(AKASH_API_KEY)
+            bot_vars.shop_items = await ai.generate_shop_items(bot_vars.ai_key)
             
-        await message.channel.send(bot_vars.get_shop_items_str(), view=ShopView(bot_vars))
+        await message.channel.send(
+            content=bot_vars.get_shop_items_str(),
+            view=ShopView(bot_vars.shop_items)
+            )
 
-async def buy(message: Message, bot_vars: BotVariables) -> None:
+
+async def buy(message: Message) -> None:
     async with message.channel.typing():
         item_idx_str: str = message.content[5:]
 
@@ -149,10 +168,19 @@ async def buy(message: Message, bot_vars: BotVariables) -> None:
             return
         
         item_idx: int = int(item_idx_str) - 1
-        await buy_item(item_idx, message.channel, message.author.id, bot_vars)
+        await buy_item(item_idx, message.channel, message.author.id)
 
-# Used by ShopButton
-async def buy_item(idx: int, channel: TextChannel, userid: int, bot_vars: BotVariables) -> bool:
+
+async def buy_item(
+        idx: int,
+        channel: TextChannel,
+        userid: int,
+        orig_shop_msg: Message | None = None,
+        shop_view: ShopView | None = None
+    ) -> bool:
+    """`orig_shop_msg` and `shop_view` are provided when this function is
+    called from a shop view. Returns if the item was bought successfully."""
+
     async with channel.typing():
         item: ShopItem = bot_vars.shop_items[idx]
         
@@ -161,7 +189,10 @@ async def buy_item(idx: int, channel: TextChannel, userid: int, bot_vars: BotVar
             return item.is_bought
         
         if bot_vars.user_interaction_tokens[userid][0] < item.cost:
-            await channel.send(f":prohibited: У вас недостаточно токенов взаимодействия (у вас `{bot_vars.user_interaction_tokens[userid][0]}`). Они выдаются каждые 6 сообщений.")
+            await channel.send(
+                ":prohibited: У вас недостаточно токенов взаимодействия (у вас " + 
+                f"`{bot_vars.user_interaction_tokens[userid][0]}`). Они выдаются каждые 6 сообщений."
+            )
             return item.is_bought
         
         bot_vars.user_interaction_tokens[userid][0] -= item.cost
@@ -175,9 +206,16 @@ async def buy_item(idx: int, channel: TextChannel, userid: int, bot_vars: BotVar
         response += await ai.generate_feeding_comment(bot_vars.ai_key, item, bot_vars, ai.CommentType.SHOP)
         await channel.send(response)
 
+        if orig_shop_msg is not None and shop_view is not None:
+            await orig_shop_msg.edit(
+                content=bot_vars.get_shop_items_str(),
+                view=shop_view
+            )
+
     return item.is_bought
 
-async def status(message: Message, bot_vars: BotVariables) -> None:
+
+async def status(message: Message) -> None:
     async with message.channel.typing():
         bot_status: str = f":heart: Здоровье: `{int(bot_vars.health)}`\n"
         bot_status += f":meat_on_bone: Сытость: `{int(bot_vars.satiety)}`\n"
@@ -187,7 +225,8 @@ async def status(message: Message, bot_vars: BotVariables) -> None:
 
         await message.channel.send(bot_status)
 
-async def tokens(message: Message, bot_vars: BotVariables) -> None:
+
+async def tokens(message: Message) -> None:
     async with message.channel.typing():
         tok_str_list: list[str] = message.content.split(maxsplit=1)
 
@@ -203,7 +242,8 @@ async def tokens(message: Message, bot_vars: BotVariables) -> None:
 
         await message.channel.send(f":coin: Ваши токены взаимодействия: `{bot_vars.user_interaction_tokens[message.author.id][0]}`")
 
-async def pay(message: Message, bot_vars: BotVariables) -> None:
+
+async def pay(message: Message) -> None:
     async with message.channel.typing():
         token_info: list[int] = bot_vars.user_interaction_tokens[message.author.id]
 
@@ -239,7 +279,8 @@ async def pay(message: Message, bot_vars: BotVariables) -> None:
 
         await message.channel.send(f"Вы успешно перевели {payment} :coin: на счёт <@{recipient_id_str}>.")
 
-async def upgrades(message: Message, bot_vars: BotVariables) -> None:
+
+async def upgrades(message: Message) -> None:
     async with message.channel.typing():
         upgrades_view: UpgradesView = UpgradesView(
             upgrades=bot_vars.upgrades,
@@ -249,7 +290,8 @@ async def upgrades(message: Message, bot_vars: BotVariables) -> None:
 
         await message.channel.send(upgrades_view.to_str(), view=upgrades_view)
 
-async def blackjack(message: Message, bot_vars: BotVariables) -> None:
+
+async def blackjack(message: Message) -> None:
     async with message.channel.typing():
         token_info: list[int] = bot_vars.user_interaction_tokens[message.author.id]
 
@@ -283,6 +325,7 @@ async def blackjack(message: Message, bot_vars: BotVariables) -> None:
         bj_view: bj.View = bj.View(bj_manager)
         await message.channel.send(str(bj_manager), view=bj_view)
 
+
 async def help(message: Message) -> None:
     async with message.channel.typing():
         help_msg: str = "## 🤖 Общение с ботом 🤖\n"
@@ -306,7 +349,8 @@ async def help(message: Message) -> None:
 
         await message.channel.send(help_msg)
 
-async def process_tokens_info(message: Message, bot_vars: BotVariables) -> None:
+
+async def process_tokens_info(message: Message) -> None:
     userid: int = message.author.id
 
     if userid not in bot_vars.user_interaction_tokens:
@@ -330,15 +374,11 @@ async def process_tokens_info(message: Message, bot_vars: BotVariables) -> None:
     
     bot_vars.user_interaction_tokens[userid][2] = int(time.time())
 
-async def automessage(
-        message: Message,
-        AKASH_API_KEY: str,
-        bot_vars: BotVariables,
-        client: Client
-        ) -> None:
+
+async def automessage(message: Message) -> None:
     bot_vars.recent_messages.append(message)
 
-    is_mentioned: bool = client.user in message.mentions
+    is_mentioned: bool = bot_vars.client.user in message.mentions
 
     regex_match = re.search(r"(?:\s|^)инвалид", message.content.lower())
     is_mentioned_directly: bool = regex_match is not None
@@ -358,7 +398,7 @@ async def automessage(
     automessage_condition: bool = is_mentioned or is_mentioned_directly or is_time_to_automessage
     if automessage_condition and bot_vars.recent_messages:
         async with message.channel.typing():
-            automessage: str = await ai.generate_automessage(AKASH_API_KEY, bot_vars)
+            automessage: str = await ai.generate_automessage(bot_vars.ai_key, bot_vars)
             await message.channel.send(automessage)
 
             bot_vars.recent_messages.clear()
@@ -367,16 +407,21 @@ async def automessage(
             while (len(bot_vars.stylized_bot_messages) > bot_vars.setting_own_message_memory):
                 bot_vars.stylized_bot_messages.pop(0)
 
-async def bot_death_notify(message: Message, bot_vars: BotVariables) -> None:
+
+async def bot_death_notify(message: Message) -> None:
     if not bot_vars.time_of_death:
         bot_vars.time_of_death = int(time.time())
 
     cant_revive_time: int = bot_vars.time_of_death + 3600
-    cant_revive_timestamp: str = f"<t:{cant_revive_time}:f>"
 
-    await message.channel.send(f"сука я сдох поставь пять чтобы я ВОСКРЕС\nменя можно воскресить без потери токенов до {cant_revive_timestamp}")
+    await message.channel.send(
+        "сука я сдох поставь пять чтобы я ВОСКРЕС\n" + 
+        f"меня можно{' было' if time.time() > cant_revive_time else ''}" +
+        f" воскресить без потери токенов до <t:{cant_revive_time}:f>"
+        )
 
-async def try_revive(reaction: Reaction, bot_vars: BotVariables) -> None:
+
+async def try_revive(reaction: Reaction) -> None:
     is_dead: bool = bot_vars.health <= 0
     is_reaction_to_bots_message: bool = reaction.message.author.id == bot_vars.client.user.id
     is_correct_emoji: bool = reaction.emoji == "5️⃣"
