@@ -89,10 +89,10 @@ async def generate_automessage(akash_api_key: str, bot_vars: BotVariables) -> st
 
     response = await get_response(akash_api_key, prompt)
     
-    while (response[0] == "\""):
+    if response[0] == "\"":
         # Sometimes the bot surrounds it's messages with quotes, we have to remove them
         # We don't remove the trailing quotes if there are no leading quotes
-        response.strip("\"")
+        response = response.strip("\"")
     
     return response
 
