@@ -54,8 +54,14 @@ def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-
             stream=True
         )
 
+        response_len: int = 0
         for chunk in response:
             yield chunk.choices[0].delta.content
+
+            response_len += len(chunk.choices[0].delta.content)
+            if response_len >= 5000:
+                response.close()
+                break
     except Exception as e:
         LOGGER.error(f"Exception while calling Akash's API to stream: {e}")
         return "🚫 вы даун"

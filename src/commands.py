@@ -27,6 +27,7 @@ async def prompt(message: Message) -> None:
         chunk_buf: list[str] = []
         chunk_buf_len: int = 0
         msg_len: int = len(bot_msg.content)
+        response_len: int = msg_len
 
         for chunk in ai.stream_response(bot_vars.ai_key, prompt):
             if chunk is None:
@@ -36,6 +37,7 @@ async def prompt(message: Message) -> None:
             chunk_len = len(chunk)
             chunk_buf_len += chunk_len
             msg_len += chunk_len
+            response_len += chunk_len
 
             if chunk_buf_len >= 200:
                 if msg_len >= 2000:
@@ -45,6 +47,10 @@ async def prompt(message: Message) -> None:
                     bot_msg = await bot_msg.edit(content=bot_msg.content + "".join(chunk_buf))
                 chunk_buf.clear()
                 chunk_buf_len = 0
+
+                if response_len >= 5000:
+                    await bot_msg.edit(content=bot_msg.content + "\n\nкароче я заебался писать иди нахуй")
+                    break
 
         if chunk_buf:
             await bot_msg.edit(content=bot_msg.content + "".join(chunk_buf))
