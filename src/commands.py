@@ -229,6 +229,13 @@ async def status(message: Message) -> None:
         bot_status += f":hourglass: Бот прожил: `{(int(time.time()) - bot_vars.CREATED_AT) // 3600}` часов\n\n"
         bot_status += f":coin: Ваши токены взаимодействия: `{bot_vars.user_interaction_tokens[message.author.id][0]}`"
 
+        automsg_expansion: str | None = bot_vars.upgrades.get_automsg_expansion()
+        if automsg_expansion is not None:
+            bot_status += f"\n\n✍️ Пользовательский текст запроса сообщений инвалида:\n> {automsg_expansion}"
+
+        if bot_vars.upgrades.is_fubar():
+            bot_status += "\n\n👹 Я ебанутый."
+
         await message.channel.send(bot_status)
 
 
@@ -412,6 +419,12 @@ async def automessage(message: Message) -> None:
             bot_vars.stylized_bot_messages.append(automessage)
             while (len(bot_vars.stylized_bot_messages) > bot_vars.setting_own_message_memory):
                 bot_vars.stylized_bot_messages.pop(0)
+
+
+async def check_if_waiting_for_message(message: Message) -> None:
+    if bot_vars.upgrades.is_automsg_expansion_being_bought_by_user(message.author.id):
+        bot_vars.upgrades.set_automsg_expansion(message.content)
+        await message.reply(":white_check_mark: Текст запроса сообщений успешно обновлён.")
 
 
 async def bot_death_notify(message: Message) -> None:

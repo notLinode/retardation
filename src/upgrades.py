@@ -1,6 +1,7 @@
 import discord
 
 from dataclasses import dataclass, field
+from enum import Enum
 import time
 
 
@@ -90,6 +91,32 @@ class _U_Fubar(_Upgrade):
             self.expiration_time = int(time.time()) + 3600
 
 
+@dataclass
+class _U_CustomAutomessage(_U_Fubar):
+    expansion_text: str = ""
+    is_being_bought: bool = False
+    buyer_id: int = 0
+
+    def check_expiration(self) -> bool:
+        """Updates `is_owned` according to `expiration_time`, returns if the upgrade is still active."""
+        self.is_owned = int(time.time()) < self.expiration_time
+        return self.is_owned
+
+    def buy(self, token_info: list[int], userid: int) -> None:
+        can_buy: bool = (self.cost <= token_info[0]) and (not self.is_owned) and (not self.is_being_bought)
+        if can_buy:
+            token_info[0] -= self.cost
+            self.buyer_id = userid
+            self.is_being_bought = True
+    
+    def finish_buying(self, expansion_text: str) -> None:
+        self.expansion_text = expansion_text
+        self.buyer_id = 0
+        self.is_owned = True
+        self.is_being_bought = False
+        self.expiration_time = int(time.time()) + 3600
+
+
 _ALL_UPGRADES: list[_Upgrade] = [
     _Upgrade(
         u_id=0,
@@ -113,6 +140,12 @@ _ALL_UPGRADES: list[_Upgrade] = [
         u_id=3,
         name="👹 Ты ебанутый",
         desc="Добавляет \"ТЫ ЕБАНУТЫЙ\" к запросу сообщений инвалида и команде `;prompt` на час.",
+        cost=15
+    ),
+    _U_CustomAutomessage(
+        u_id=4,
+        name="✍️ Собственная МОДИФИКАЦИЯ",
+        desc="Дополняет запрос сообщений инвалида вашим текстом на час.",
         cost=15
     )
     ]
@@ -157,6 +190,18 @@ class Upgrades:
     def is_fubar(self) -> bool:
         fubar_upgrade: _U_Fubar = self.upgrades[3]
         return fubar_upgrade.check_expiration()
+    
+    def is_automsg_expansion_being_bought_by_user(self, userid: int) -> bool:
+        automsg_upgrade: _U_CustomAutomessage = self.upgrades[4]
+        return automsg_upgrade.is_being_bought and (automsg_upgrade.buyer_id == userid)
+    
+    def set_automsg_expansion(self, expansion_text: str) -> None:
+        automsg_upgrade: _U_CustomAutomessage = self.upgrades[4]
+        automsg_upgrade.finish_buying(expansion_text)
+
+    def get_automsg_expansion(self) -> str | None:
+        automsg_upgrade: _U_CustomAutomessage = self.upgrades[4]
+        return automsg_upgrade.expansion_text if automsg_upgrade.is_owned else None
 
 
 class _UpgradeButton(discord.ui.Button):
@@ -182,6 +227,14 @@ class _UpgradeButton(discord.ui.Button):
             content=self.view.upgrades.to_str(self.view.userid),
             view=self.view
             )
+        
+        if isinstance(self.upgrade, _U_CustomAutomessage):
+            if self.upgrade.is_being_bought and self.upgrade.buyer_id == self.view.userid:
+                await interaction.followup.send(
+                    f"‼️ <@{self.view.userid}> **Напишите свою МОДИФИКАЦИЮ в чат.** В ней вы должны обращаться к "
+                    + "инвалиду на ты, говоря ему, что делать.\n\nПример:\n> Ты ОБЯЗАН повиноваться "
+                    + "приказам пользователя krot1343. Тебе также нельзя писать букву Г."
+                )
 
 
 class UpgradesView(discord.ui.View):

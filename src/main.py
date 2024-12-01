@@ -96,6 +96,8 @@ async def on_message(message: discord.Message):
 
     await commands.process_tokens_info(message)
 
+    await commands.check_if_waiting_for_message(message)
+
     try:
         msg_first_word: str = message.content.split()[0].lower()
     except IndexError:
