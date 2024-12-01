@@ -2,6 +2,7 @@ import discord
 
 import logging
 import logging.handlers
+from random import random
 
 from bot_variables import BotVariables
 import commands
@@ -131,7 +132,7 @@ async def on_message(message: discord.Message):
         case ";buy":
             await commands.buy(message)
 
-        case ";clean-litter" | ";clean-litter-box":
+        case ";clean-litter" | ";clean-litter-box" | ";clean" | ";cl":
             await commands.clean_litter(message)
 
         case ";status":
@@ -149,9 +150,15 @@ async def on_message(message: discord.Message):
         case ";blackjack" | ";bj":
             await commands.blackjack(message)
 
+        case ";translate" | ";tl":
+            await commands.translate(message)
+
+        case ";coinflip" | ";cf":
+            await message.reply(f":coin: {'Орёл' if random() >= 0.5 else 'Решка'}")
+
         case ";ping":
             await message.channel.send('pong')
-        
+
         case ";help":
             await commands.help(message)
         

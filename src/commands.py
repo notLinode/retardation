@@ -4,6 +4,7 @@ import logging
 import time
 import random
 import re
+import requests
 
 import blackjack as bj
 from bot_variables import BotVariables
@@ -339,28 +340,100 @@ async def blackjack(message: Message) -> None:
         await message.channel.send(str(bj_manager), view=bj_view)
 
 
-async def help(message: Message) -> None:
+async def translate(message: Message) -> None:
     async with message.channel.typing():
-        help_msg: str = "## 🤖 Общение с ботом 🤖\n"
-        help_msg += "- `;prompt [Сообщение: str]` - обратиться к Llama 3.1 405B.\n"
-        help_msg += "- `;set-message-interval [Интервал: int | \"random\"]` - поставить количество пользовательских сообщений, после которых бот сам что-то напишет.\n"
-        help_msg += "- `;set-own-message-memory [Память: int]` - поставить количество собственных сообщений бота, которые он запомнит и учтёт при написании следующего своего сообщения.\n"
-        help_msg += "- `;clear-memory` - Очищает память бота от своих и пользовательских сообщений.\n"
-        help_msg += "- `;ping` - pong.\n"
-        help_msg += "## 💸 Экономика 💸\n"
-        help_msg += "- `;tokens (;tok) [@Ник - mention | None]` - Показывает ваши токены (либо токены указанного человека).\n"
-        help_msg += "- `;pay [@Ник - mention, Сумма - int | \"all\"]` - Переводит токены с вашего счета на чужой.\n"
-        help_msg += "- `;upgrade (;upgrades)` - Открывает меню апгрейдов.\n"
-        help_msg += "- `;blackjack (;bj) [Ставка: int | \"all\"]` - Сыграть в блэкджек.\n"
-        help_msg += "## 🧼 Уход за ботом 🧼\n"
-        help_msg += "- `;status` - Показывает состояние бота и количество ваших токенов.\n"
-        help_msg += "- `;shop` - Показывает магазин. Магазин обновляется каждый час.\n"
-        help_msg += "- `;buy [Номер: int]` - Покупает вещь из магазина и даёт её боту.\n"
-        help_msg += "- `;feed [Еда: str]` - Кормит бота тем, что вы укажете в команде. Для использования необходим апгрейд. Тратит 1 токен при использовании.\n"
-        help_msg += "- `;heal [Лекарство: str]` - Лечит бота тем, что вы укажете в команде. Для использования необходим апгрейд. Тратит 1 токен при использовании.\n"
-        help_msg += "- `;clean-litter` - Очищает лоток бота.\n"
+        args: list[str] = message.content.split(maxsplit=2)
 
-        await message.channel.send(help_msg)
+        if len(args) != 3:
+            if message.reference is None:
+                await message.channel.send(":prohibited: вы даун")
+                return
+
+            if message.reference.cached_message is None:
+                await message.channel.send("я не вижу сообщение! скопируй его в свою команду! сейчас же! сука!")
+                return
+
+            args.append(message.reference.cached_message.content)
+
+        if "2" not in args[1]:
+            await message.channel.send(":prohibited: вы даун")
+            return
+
+        lang_info: list[str] = args[1].split("2", maxsplit=1)
+        if not lang_info[0]:
+            lang_info[0] = "auto"
+
+        available_langs: list[str] = [
+            "ar", "az", "bg", "bn", "ca", "cs", "da", "de", "el", "en", "eo",
+            "es", "et", "fa", "fi", "fr", "ga", "he", "hi", "hu", "id", "it",
+            "ja", "ko", "lt", "lv", "ms", "nb", "nl", "pl", "pt", "ro", "ru",
+            "sk", "sl", "sq", "sr", "sv", "th", "tl", "tr", "uk", "zh", "zt",
+            "auto"
+        ]
+
+        for lang in lang_info:
+            if lang not in available_langs:
+                await message.reply(f"нет такого языка \"{lang}\"")
+                return
+
+        url: str = "https://translate.disroot.org/translate"
+        data: dict = {
+            "q": args[2],
+            "source": lang_info[0],
+            "target": lang_info[1],
+            "format": "text",
+            "alternatives": 3
+        }
+
+        response: requests.Response = requests.post(url, json=data)
+        response_json: dict = response.json()
+
+        match response.status_code:
+            case 200:
+                bot_reply: str = response_json["translatedText"]
+ 
+                if response_json["alternatives"]:
+                    bot_reply += "\n\nАльтернативные версии перевода:"
+                    for alt in response_json["alternatives"]:
+                        bot_reply += f"\n- {alt}"
+
+                await message.reply(bot_reply)
+            case 400 | 403:
+                await message.reply(":prohibited: ашипка ноль ноль ноль")
+                LOGGER.error(f"Error while trying to translate a message ({message.content}): {response_json['error']}")
+            case 429:
+                await message.reply(":warning: ах ах слишком быстро")
+                LOGGER.error(f"Error while trying to translate a message ({message.content}): {response_json['error']}")
+            case 500:
+                await message.reply(":question: ошибка переводчика")
+                LOGGER.error(f"Error while trying to translate a message ({message.content}): {response_json['error']}")
+
+
+async def help(message: Message) -> None:
+    help_msg: str = "## 🤖 Общение с ботом 🤖\n"
+    help_msg += "- `;set-message-interval [Интервал: int | \"random\"]` - поставить количество пользовательских сообщений, после которых бот сам что-то напишет.\n"
+    help_msg += "- `;set-own-message-memory [Память: int]` - поставить количество собственных сообщений бота, которые он запомнит и учтёт при написании следующего своего сообщения.\n"
+    help_msg += "- `;clear-memory` - Очищает память бота от своих и пользовательских сообщений.\n"
+    help_msg += "## 💸 Экономика 💸\n"
+    help_msg += "- `;tokens (;tok) [@Ник - mention | None]` - Показывает ваши токены (либо токены указанного человека).\n"
+    help_msg += "- `;pay [@Ник - mention, Сумма - int | \"all\"]` - Переводит токены с вашего счета на чужой.\n"
+    help_msg += "- `;upgrade (;upgrades)` - Открывает меню апгрейдов.\n"
+    help_msg += "- `;blackjack (;bj) [Ставка: int | \"all\"]` - Сыграть в блэкджек.\n"
+    help_msg += "## 🧼 Уход за ботом 🧼\n"
+    help_msg += "- `;status` - Показывает состояние бота и количество ваших токенов.\n"
+    help_msg += "- `;shop` - Показывает магазин. Магазин обновляется каждый час.\n"
+    help_msg += "- `;buy [Номер: int]` - Покупает вещь из магазина и даёт её боту.\n"
+    help_msg += "- `;feed [Еда: str]` - Кормит бота тем, что вы укажете в команде. Для использования необходим апгрейд. Тратит 1 токен при использовании.\n"
+    help_msg += "- `;heal [Лекарство: str]` - Лечит бота тем, что вы укажете в команде. Для использования необходим апгрейд. Тратит 1 токен при использовании.\n"
+    help_msg += "- `;clean-litter (;clean, ;cl)` - Очищает лоток бота.\n"
+    help_msg += "## 🔧 Утилиты 🔧\n"
+    help_msg += "- `;prompt [Сообщение: str]` - обратиться к Llama 3.1 405B.\n"
+    help_msg += "- `;translate (;tl) [Языки: str, Сообщение: str]` - перевести текст. Языки перевода должны иметь следующий вид: `{ЯзыкОригинала}2{ЯзыкПеревода}` "
+    help_msg += "(прим. `en2ru` переведёт английский текст на русский язык). Можно оставить язык оригинала пустым для его автоматического определения (прим. `2ru`).\n"
+    help_msg += "- `;coinflip (;cf)` - подбросить монетку.\n"
+    help_msg += "- `;ping` - pong.\n"
+
+    await message.channel.send(help_msg)
 
 
 async def process_tokens_info(message: Message) -> None:
