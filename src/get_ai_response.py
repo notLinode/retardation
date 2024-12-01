@@ -45,6 +45,7 @@ def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-
 
         response = client.chat.completions.create(
             model=model,
+            timeout=30,
             messages = [
                 {
                     "role": "user",
