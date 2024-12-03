@@ -97,11 +97,6 @@ class _U_CustomAutomessage(_U_Fubar):
     is_being_bought: bool = False
     buyer_id: int = 0
 
-    def check_expiration(self) -> bool:
-        """Updates `is_owned` according to `expiration_time`, returns if the upgrade is still active."""
-        self.is_owned = int(time.time()) < self.expiration_time
-        return self.is_owned
-
     def buy(self, token_info: list[int], userid: int) -> None:
         can_buy: bool = (self.cost <= token_info[0]) and (not self.is_owned) and (not self.is_being_bought)
         if can_buy:
