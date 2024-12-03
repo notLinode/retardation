@@ -201,7 +201,7 @@ class Upgrades:
 
     def get_automsg_expansion(self) -> str | None:
         automsg_upgrade: _U_CustomAutomessage = self.upgrades[4]
-        return automsg_upgrade.expansion_text if automsg_upgrade.is_owned else None
+        return automsg_upgrade.expansion_text if automsg_upgrade.check_expiration() else None
 
 
 class _UpgradeButton(discord.ui.Button):
