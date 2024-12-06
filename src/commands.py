@@ -1,4 +1,4 @@
-from discord import Message, TextChannel, Reaction
+from discord import Member, Message, TextChannel, Reaction
 
 import logging
 import time
@@ -340,6 +340,29 @@ async def blackjack(message: Message) -> None:
         await message.channel.send(str(bj_manager), view=bj_view)
 
 
+async def leaderboard(message: Message) -> None:
+    sorted_tok_info: list[set[int, list[int]]] = sorted(
+        bot_vars.user_interaction_tokens.items(),
+        key=lambda item: item[1][0],
+        reverse=True
+    )
+
+    lb: str = ":bar_chart: Топ сервера по токенам:\n"
+
+    for i, token_info in enumerate(sorted_tok_info):
+        if i >= 5:
+            break
+        
+        member: Member = await message.guild.fetch_member(token_info[0])
+        member_name: str = member.nick if member.nick is not None else member.name
+
+        lb += f"{i}. **{member_name}**: {token_info[1][0]} :coin:\n"
+
+    lb += f"\nВаши токены: {bot_vars.user_interaction_tokens[message.author.id][0]} :coin:"
+
+    await message.channel.send(lb)
+
+
 async def translate(message: Message) -> None:
     async with message.channel.typing():
         args: list[str] = message.content.split(maxsplit=2)
@@ -419,6 +442,7 @@ async def help(message: Message) -> None:
     help_msg += "- `;pay [@Ник - mention, Сумма - int | \"all\"]` - Переводит токены с вашего счета на чужой.\n"
     help_msg += "- `;upgrade (;upgrades)` - Открывает меню апгрейдов.\n"
     help_msg += "- `;blackjack (;bj) [Ставка: int | \"all\"]` - Сыграть в блэкджек.\n"
+    help_msg += "- `;leaderboard (;top, ;lb)` - Показать топ сервера по токенам.\n"
     help_msg += "## 🧼 Уход за ботом 🧼\n"
     help_msg += "- `;status` - Показывает состояние бота и количество ваших токенов.\n"
     help_msg += "- `;shop` - Показывает магазин. Магазин обновляется каждый час.\n"
