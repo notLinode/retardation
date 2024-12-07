@@ -108,6 +108,17 @@ async def clear_memory(message: Message) -> None:
         await message.channel.send(f":white_check_mark: я всё заббыл нахуй")
 
 
+async def stop_writing_here(message: Message) -> None:
+    channel_id: int = message.channel.id
+
+    if channel_id not in bot_vars.banned_automsg_channels:
+        bot_vars.banned_automsg_channels.append(channel_id)
+        await message.reply("извините я больше не буду сюда писать")
+    else:
+        bot_vars.banned_automsg_channels.remove(channel_id)
+        await message.reply("ок я снова буду сюда писать")
+
+
 async def feed(message: Message) -> None:
     async with message.channel.typing():
         if bot_vars.user_interaction_tokens[message.author.id][0] <= 0:
@@ -437,6 +448,8 @@ async def help(message: Message) -> None:
     help_msg += "- `;set-message-interval [Интервал: int | \"random\"]` - поставить количество пользовательских сообщений, после которых бот сам что-то напишет.\n"
     help_msg += "- `;set-own-message-memory [Память: int]` - поставить количество собственных сообщений бота, которые он запомнит и учтёт при написании следующего своего сообщения.\n"
     help_msg += "- `;clear-memory` - Очищает память бота от своих и пользовательских сообщений.\n"
+    # TODO: shorten ;help
+    # help_msg += "- `;stop-writing-here (;stop)` - Запрещает инвалиду автоматически писать в данный чат, но не запрещает пользоваться командами.\n"
     help_msg += "## 💸 Экономика 💸\n"
     help_msg += "- `;tokens (;tok) [@Ник - mention | None]` - Показывает ваши токены (либо токены указанного человека).\n"
     help_msg += "- `;pay [@Ник - mention, Сумма - int | \"all\"]` - Переводит токены с вашего счета на чужой.\n"
@@ -487,6 +500,9 @@ async def process_tokens_info(message: Message) -> None:
 
 
 async def automessage(message: Message) -> None:
+    if message.channel.id in bot_vars.banned_automsg_channels:
+        return
+
     bot_vars.recent_messages.append(message)
 
     is_mentioned: bool = bot_vars.client.user in message.mentions

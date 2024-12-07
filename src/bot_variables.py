@@ -29,6 +29,8 @@ class BotVariables:
     recent_messages: list[Message] = field(default_factory=list[Message])
     stylized_bot_messages: list[str] = field(default_factory=list[str])
 
+    banned_automsg_channels: list[int] = field(default_factory=list[int])
+
     satiety: float = 100.0
     health: float = 100.0
     litter_box_fullness: int = 0
@@ -107,6 +109,7 @@ class BotVariables:
             self.SETTING_OWN_MESSAGE_MEMORY_MIN,
             self.SETTING_OWN_MESSAGE_MEMORY_MAX,
             self.setting_own_message_memory,
+            self.banned_automsg_channels,
             self.satiety,
             self.health,
             self.litter_box_fullness,
@@ -143,6 +146,7 @@ class BotVariables:
                         SETTING_OWN_MESSAGE_MEMORY_MIN = int(row["SETTING_OWN_MESSAGE_MEMORY_MIN"]),
                         SETTING_OWN_MESSAGE_MEMORY_MAX = int(row["SETTING_OWN_MESSAGE_MEMORY_MAX"]),
                         setting_own_message_memory     = int(row["setting_own_message_memory"]),
+                        banned_automsg_channels        = eval(row.get("banned_automsg_channels", "[]")),
                         satiety                        = float(row["satiety"]),
                         health                         = float(row["health"]),
                         litter_box_fullness            = int(row["litter_box_fullness"]),
@@ -187,6 +191,8 @@ class _BotVariablesDto:
     SETTING_OWN_MESSAGE_MEMORY_MIN: int
     SETTING_OWN_MESSAGE_MEMORY_MAX: int
     setting_own_message_memory: int
+
+    banned_automsg_channels: list[int]
 
     satiety: float
     health: float

@@ -118,6 +118,9 @@ async def on_message(message: discord.Message):
         case ";clear-memory":
             await commands.clear_memory(message)
 
+        case ";stop-writing-here" | ";stop":
+            await commands.stop_writing_here(message)
+
         case ";feed":
             if bot_vars.upgrades.can_feed():
                 await commands.feed(message)
