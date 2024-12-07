@@ -365,12 +365,13 @@ async def leaderboard(message: Message) -> None:
         if i >= 5:
             break
         
+        member_name: str
         try:
             member: Member = await message.guild.fetch_member(token_info[0])
-            member_name: str = member.nick if member.nick is not None else member.name
+            member_name = member.nick if member.nick is not None else member.name
         except NotFound as e:
-            LOGGER.error(f"Error while trying to fetch a member with id {token_info[0]} for ;top: {e}")
-            return
+            LOGGER.error(f"Can't fetch a member with id {token_info[0]} for ;leaderboard, fetching a user instead.")
+            member_name = await bot_vars.client.fetch_user(token_info[0])
 
         lb += f"{i}. **{member_name}**: {token_info[1][0]} :coin:\n"
 
