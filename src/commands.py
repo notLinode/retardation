@@ -1,4 +1,5 @@
 from discord import Member, Message, TextChannel, Reaction
+from discord.errors import NotFound
 
 import logging
 import time
@@ -364,8 +365,12 @@ async def leaderboard(message: Message) -> None:
         if i >= 5:
             break
         
-        member: Member = await message.guild.fetch_member(token_info[0])
-        member_name: str = member.nick if member.nick is not None else member.name
+        try:
+            member: Member = await message.guild.fetch_member(token_info[0])
+            member_name: str = member.nick if member.nick is not None else member.name
+        except NotFound as e:
+            LOGGER.error(f"Error while trying to fetch a member with id {token_info[0]} for ;top: {e}")
+            return
 
         lb += f"{i}. **{member_name}**: {token_info[1][0]} :coin:\n"
 
