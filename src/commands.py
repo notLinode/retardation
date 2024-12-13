@@ -566,6 +566,9 @@ async def try_revive(reaction: Reaction) -> None:
     is_correct_emoji: bool = reaction.emoji == "5️⃣"
 
     if is_dead and is_reaction_to_bots_message and is_correct_emoji:
+        if not bot_vars.time_of_death:
+            bot_vars.time_of_death = int(time.time())
+
         can_rehabilitate: bool = int(time.time()) < (bot_vars.time_of_death + 3600)
         bot_vars.revive(can_rehabilitate)
 
