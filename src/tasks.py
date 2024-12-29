@@ -26,6 +26,10 @@ async def save_on_disk_task():
 
 async def hunger_task():
     while True:
+        if not bot_vars.do_tamagotchi:
+            await asyncio.sleep(60.0)
+            continue
+
         bot_vars.litter_box_timer -= 1
 
         if bot_vars.litter_box_timer == 0:
@@ -63,6 +67,16 @@ async def presence_task():
 
 async def update_shop_task():
     while True:
+        is_shop_untouched: bool = True
+        for item in bot_vars.shop_items:
+            if item.is_bought:
+                is_shop_untouched = False
+                break
+        
+        if not is_shop_untouched:
+            await asyncio.sleep(3600.0)
+            continue
+
         try:
             bot_vars.shop_items = await ai.generate_shop_items(bot_vars.ai_key)
             bot_vars.shop_items_next_update_time = int(time.time()) + 3600

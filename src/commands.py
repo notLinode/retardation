@@ -255,9 +255,9 @@ async def status(message: Message) -> None:
 async def do_tamagotchi(message: Message) -> None:
     bot_vars.do_tamagotchi = not bot_vars.do_tamagotchi
     if bot_vars.do_tamagotchi:
-        message.reply(":white_check_mark: :white_check_mark: режим выживания вновь включён")
+        await message.reply(":white_check_mark: :white_check_mark: режим выживания вновь включён")
     else:
-        message.reply(":white_check_mark: режим выживания выключен..... НАВСЕГДА.......")
+        await message.reply(":white_check_mark: режим выживания выключен..... НАВСЕГДА.......")
 
 
 async def tokens(message: Message) -> None:
