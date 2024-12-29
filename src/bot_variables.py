@@ -31,6 +31,7 @@ class BotVariables:
 
     banned_automsg_channels: list[int] = field(default_factory=list[int])
 
+    do_tamagotchi: bool = True
     satiety: float = 100.0
     health: float = 100.0
     litter_box_fullness: int = 0
@@ -110,6 +111,7 @@ class BotVariables:
             self.SETTING_OWN_MESSAGE_MEMORY_MAX,
             self.setting_own_message_memory,
             self.banned_automsg_channels,
+            self.do_tamagotchi,
             self.satiety,
             self.health,
             self.litter_box_fullness,
@@ -147,6 +149,7 @@ class BotVariables:
                         SETTING_OWN_MESSAGE_MEMORY_MAX = int(row["SETTING_OWN_MESSAGE_MEMORY_MAX"]),
                         setting_own_message_memory     = int(row["setting_own_message_memory"]),
                         banned_automsg_channels        = eval(row.get("banned_automsg_channels", "[]")),
+                        do_tamagotchi                  = row.get("do_tamagotchi", "True") == "True",
                         satiety                        = float(row["satiety"]),
                         health                         = float(row["health"]),
                         litter_box_fullness            = int(row["litter_box_fullness"]),
@@ -194,6 +197,7 @@ class _BotVariablesDto:
 
     banned_automsg_channels: list[int]
 
+    do_tamagotchi: bool
     satiety: float
     health: float
     litter_box_fullness: int

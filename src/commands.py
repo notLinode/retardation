@@ -252,6 +252,14 @@ async def status(message: Message) -> None:
         await message.channel.send(bot_status)
 
 
+async def do_tamagotchi(message: Message) -> None:
+    bot_vars.do_tamagotchi = not bot_vars.do_tamagotchi
+    if bot_vars.do_tamagotchi:
+        message.reply(":white_check_mark: :white_check_mark: режим выживания вновь включён")
+    else:
+        message.reply(":white_check_mark: режим выживания выключен..... НАВСЕГДА.......")
+
+
 async def tokens(message: Message) -> None:
     async with message.channel.typing():
         tok_str_list: list[str] = message.content.split(maxsplit=1)

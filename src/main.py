@@ -140,6 +140,9 @@ async def on_message(message: discord.Message):
 
         case ";status":
             await commands.status(message)
+        
+        case ";do-tamagotchi" | ";tamagotchi":
+            await commands.do_tamagotchi(message)
 
         case ";tokens" | ";tok":
             await commands.tokens(message)
