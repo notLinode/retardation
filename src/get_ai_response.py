@@ -12,7 +12,7 @@ from shop_item import ShopItem
 LOGGER = logging.getLogger(__name__)
 
 
-async def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-405B-Instruct-FP8", timeout: int = 7) -> str:
+async def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-3-70B-Instruct", timeout: int = 7) -> str:
     try:
         client = openai.OpenAI(
             api_key=akash_api_key,
