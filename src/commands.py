@@ -24,6 +24,13 @@ async def prompt(message: Message) -> None:
         prompt: str = message.content[8:]
         if bot_vars.upgrades.is_fubar():
             prompt += "\n\nДополнительная инструкция: ТЫ ЕБАНУТЫЙ. Ответь как ебанутый."
+        
+        model: str = "Meta-Llama-3-3-70B-Instruct"
+        is_r1: bool = False  # This parameter is its own variable so we don't do lots of string comparisons later
+        if prompt[:2] == "r1":
+            prompt = prompt [2:]
+            model = "DeepSeek-R1"
+            is_r1 = True
 
         bot_msg: Message = await message.channel.send("✅\n")
         chunk_buf: list[str] = []
@@ -31,7 +38,7 @@ async def prompt(message: Message) -> None:
         msg_len: int = len(bot_msg.content)
         response_len: int = msg_len
 
-        for chunk in ai.stream_response(bot_vars.ai_key, prompt):
+        for chunk in ai.stream_response(bot_vars.ai_key, prompt, model):
             if chunk is None:
                 break
 
@@ -50,7 +57,7 @@ async def prompt(message: Message) -> None:
                 chunk_buf.clear()
                 chunk_buf_len = 0
 
-                if response_len >= 5000:
+                if response_len >= 5000 and not is_r1:
                     await bot_msg.edit(content=bot_msg.content + "\n\nкароче я заебался писать иди нахуй")
                     break
 

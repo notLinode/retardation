@@ -55,12 +55,13 @@ def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-
             stream=True
         )
 
+        is_r1: bool = model == "DeepSeek-R1"  # This parameter is its own variable so we don't do lots of string comparisons later
         response_len: int = 0
         for chunk in response:
             yield chunk.choices[0].delta.content
 
             response_len += len(chunk.choices[0].delta.content)
-            if response_len >= 5000:
+            if response_len >= 5000 and not is_r1:
                 response.close()
                 break
     except Exception as e:
