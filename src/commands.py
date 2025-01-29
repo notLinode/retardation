@@ -24,13 +24,27 @@ async def prompt(message: Message) -> None:
         prompt: str = message.content[8:]
         if bot_vars.upgrades.is_fubar():
             prompt += "\n\nДополнительная инструкция: ТЫ ЕБАНУТЫЙ. Ответь как ебанутый."
-        
-        model: str = "Meta-Llama-3-3-70B-Instruct"
-        is_r1: bool = False  # This parameter is its own variable so we don't do lots of string comparisons later
-        if prompt[:2] == "r1":
-            prompt = prompt [2:]
-            model = "DeepSeek-R1"
-            is_r1 = True
+
+        model, __, prompt = prompt.partition(" ")
+
+        match model.lower():
+            case "r1":
+                model = "DeepSeek-R1"
+                is_long_answer: bool = True
+                is_thinking: bool = True
+            case "r1dl":
+                model = "DeepSeek-R1-Distill-Llama-70B"
+                is_long_answer: bool = True
+                is_thinking: bool = True
+            case "r1dq":
+                model = "DeepSeek-R1-Distill-Qwen-32B"
+                is_long_answer: bool = True
+                is_thinking: bool = True
+            case _:
+                prompt = model + prompt  # User didn't specify a model, so the first word needs to be put back into the prompt
+                model = "Meta-Llama-3-3-70B-Instruct"
+                is_long_answer: bool = False
+                is_thinking: bool = False
 
         bot_msg: Message = await message.channel.send("✅\n")
         chunk_buf: list[str] = []
@@ -38,9 +52,21 @@ async def prompt(message: Message) -> None:
         msg_len: int = len(bot_msg.content)
         response_len: int = msg_len
 
-        for chunk in ai.stream_response(bot_vars.ai_key, prompt, model):
+        for chunk in ai.stream_response(bot_vars.ai_key, prompt, model, not is_long_answer):
             if chunk is None:
                 break
+
+            was_thinking: bool = is_thinking
+
+            if is_thinking:
+                if "</think>" in chunk:
+                    is_thinking = False
+                    chunk1, chunk2, chunk3 = chunk.partition("</think>")
+                    chunk1 = chunk1.replace("\n", "\n-# ").replace("\n-# \n", "\n\n")
+                    chunk = chunk1 + chunk2 + chunk3
+                else:
+                    chunk = chunk.replace("\n", "\n-# ").replace("\n-# \n", "\n\n")
+
 
             chunk_buf.append(chunk)
             chunk_len = len(chunk)
@@ -50,14 +76,17 @@ async def prompt(message: Message) -> None:
 
             if chunk_buf_len >= 200:
                 if msg_len >= 2000:
+                    if was_thinking:
+                        chunk_buf.insert(0, "-# ")
                     bot_msg = await message.channel.send("".join(chunk_buf))
                     msg_len = chunk_buf_len
                 else:
                     bot_msg = await bot_msg.edit(content=bot_msg.content + "".join(chunk_buf))
+
                 chunk_buf.clear()
                 chunk_buf_len = 0
 
-                if response_len >= 5000 and not is_r1:
+                if response_len >= 5000 and not is_long_answer:
                     await bot_msg.edit(content=bot_msg.content + "\n\nкароче я заебался писать иди нахуй")
                     break
 
