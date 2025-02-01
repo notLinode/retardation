@@ -42,7 +42,7 @@ async def prompt(message: Message) -> None:
                 is_thinking: bool = True
             case _:
                 prompt = model + prompt  # User didn't specify a model, so the first word needs to be put back into the prompt
-                model = "Meta-Llama-3-3-70B-Instruct"
+                model = "Meta-Llama-3-1-405B-Instruct-FP8"
                 is_long_answer: bool = False
                 is_thinking: bool = False
 
@@ -59,6 +59,9 @@ async def prompt(message: Message) -> None:
             was_thinking: bool = is_thinking
 
             if is_thinking:
+                if len(chunk_buf) == 0:
+                    if bot_msg.content[-2:] == "-#":
+                        chunk = " " + chunk
                 if "</think>" in chunk:
                     is_thinking = False
                     chunk1, chunk2, chunk3 = chunk.partition("</think>")
