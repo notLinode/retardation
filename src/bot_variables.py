@@ -61,7 +61,7 @@ class BotVariables:
 
 
     user_interaction_tokens: dict[int, list[int]] = field(default_factory=dict[int, list[int]])  # key - userid;
-                                                                                                 # list[0] - tokens (max 3);
+                                                                                                 # list[0] - tokens;
                                                                                                  # list[1] - messages until next token;
                                                                                                  # list[2] - time of last message
 
