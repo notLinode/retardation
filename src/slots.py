@@ -67,87 +67,98 @@ class View(discord.ui.View):
 
     async def spin(self, cnt: int = 0) -> None:
         if cnt == 3:
-            sorted_reels: list["_Reel"] = sorted(self.reels, key=lambda x: x.value)
-
-            for elem in sorted_reels:
-                match elem:
-                    case _Reel.SKULL:
-                        self.winnings -= self.bet / 3
-                    case _Reel.PROVERKA:
-                        self.winnings += self.bet / 3
-
-            match sorted_reels:
-                case [_Reel.CHERRIES, _Reel.CHERRIES, _Reel.CHERRIES]:
-                    self.winnings += self.bet
-                case [_Reel.CHERRIES, _Reel.CHERRIES, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 3.5
-                case [_Reel.CHERRIES, _Reel.CHERRIES, _Reel.BULBORB] | [_Reel.CHERRIES, _Reel.CHERRIES, _Reel.ESQ_GRAGAS]:
-                    self.winnings += self.bet * 1.5
-                case [_Reel.CHERRIES, _Reel.CHERRIES, x] | [x, _Reel.CHERRIES, _Reel.CHERRIES]:
-                    self.winnings += self.bet * 0.5
-
-                case [_Reel.FUNGUS, _Reel.FUNGUS, _Reel.FUNGUS]:
-                    self.winnings += self.bet * 3
-                case [_Reel.CHERRIES, _Reel.FUNGUS, _Reel.FUNGUS]:
-                    self.winnings += self.bet * 2
-                case [_Reel.FUNGUS, _Reel.FUNGUS, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 3.5
-                case [_Reel.FUNGUS, _Reel.FUNGUS, _Reel.BULBORB] | [_Reel.FUNGUS, _Reel.FUNGUS, _Reel.ESQ_GRAGAS]:
-                    self.winnings += self.bet * 1.5
-                case [_Reel.FUNGUS, _Reel.FUNGUS, x] | [x, _Reel.FUNGUS, _Reel.FUNGUS]:
-                    self.winnings += self.bet * 0.5
-
-                case [_Reel.GRAGAS, _Reel.GRAGAS, _Reel.GRAGAS]:
-                    self.winnings += self.bet * 1.5
-                case [_Reel.CHERRIES, _Reel.GRAGAS, _Reel.GRAGAS] | [_Reel.FUNGUS, _Reel.GRAGAS, _Reel.GRAGAS]:
-                    self.winnings += self.bet
-                case [_Reel.GRAGAS, _Reel.GRAGAS, x] | [x, _Reel.GRAGAS, _Reel.GRAGAS]:
-                    self.winnings += self.bet * 0.5
-
-                case [_Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS]:
-                    self.winnings += self.bet * 10
-                case [_Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 6
-                case [_Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS, _Reel.BULBORB]:
-                    self.winnings += self.bet * 4
-                case [_Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS, x] | [x, _Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS]:
-                    self.winnings += self.bet * 3
-                case [x, y, _Reel.ESQ_GRAGAS] | [x, _Reel.ESQ_GRAGAS, y] | [_Reel.ESQ_GRAGAS, x, y]:
-                    self.winnings += self.bet
-
-                case [_Reel.BULBORB, _Reel.BULBORB, _Reel.BULBORB]:
-                    self.winnings += self.bet * 10
-                case [_Reel.BULBORB, _Reel.BULBORB, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 5
-                case [_Reel.ESQ_GRAGAS, _Reel.BULBORB, _Reel.BULBORB]:
-                    self.winnings += self.bet * 3
-                case [_Reel.BULBORB, _Reel.BULBORB, x] | [x, _Reel.BULBORB, _Reel.BULBORB]:
-                    self.winnings += self.bet * 2
-                case [x, y, _Reel.BULBORB] | [x, _Reel.BULBORB, y] | [_Reel.BULBORB, x, y]:
-                    self.winnings += self.bet
-                
-                case [_Reel.NUCLEAR_BULBORB, _Reel.NUCLEAR_BULBORB, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 1000
-                case [_Reel.BULBORB, _Reel.NUCLEAR_BULBORB, _Reel.NUCLEAR_BULBORB] | [_Reel.ESQ_GRAGAS, _Reel.NUCLEAR_BULBORB, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 11
-                case [x, _Reel.NUCLEAR_BULBORB, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 10
-                case [x, y, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 3
-
-            self.winnings = max(round(self.winnings), 0)
             self.player_token_info[0] += int(self.winnings)
-
             await self.msg.edit(content=str(self), view=self)
             return
         
         await asyncio.sleep(0.5)
 
         self.reels[cnt] = _Reel.get_random()
+        self.winnings = max(round(self.bet * self.calc_multiplier()), 0)
 
         await self.msg.edit(content=str(self), view=self)
 
         await self.spin(cnt + 1)
+
+    def calc_multiplier(self) -> float:
+        reels_sorted_vals: list[int] = sorted(list(map(lambda x: x.value, self.reels)))
+        mult: float = 0.0
+
+        for elem in reels_sorted_vals:
+            match elem:
+                case 1:
+                    mult -= 1/3
+                case 2:
+                    mult += 1/3
+
+        match reels_sorted_vals:
+            case [3, 3, 3]:
+                mult += 1
+            case [3, 3, 8]:
+                mult += 3.5
+            case [3, 3, 7] | [3, 3, 6]:
+                mult += 1.5
+            case [3, 3, x] | [x, 3, 3]:
+                mult += 0.5
+
+            case [4, 4, 4]:
+                mult += 3
+            case [3, 4, 4]:
+                mult += 2
+            case [4, 4, 8]:
+                mult += 3.5
+            case [4, 4, 7] | [4, 4, 6]:
+                mult += 1.5
+            case [4, 4, x] | [x, 4, 4]:
+                mult += 0.5
+
+            case [5, 5, 5]:
+                mult += 1.5
+            case [3, 5, 5] | [4, 5, 5]:
+                mult += 1
+            case [5, 5, 7] | [5, 5, 6]:
+                mult += 1.5
+            case [5, 5, 9]:
+                mult += 4
+            case [5, 5, x] | [x, 5, 5]:
+                mult += 0.5
+
+            case [6, 6, 6]:
+                mult += 10
+            case [6, 6, 8]:
+                mult += 6
+            case [6, 7, 8]:
+                mult += 5
+            case [6, 6, 7]:
+                mult += 4
+            case [6, 6, x] | [x, 6, 6]:
+                mult += 3
+            case [x, 6, 7] | [6, 7, x]:
+                mult += 2
+            case [x, y, 6] | [x, 6, y] | [6, x, y]:
+                mult += 1
+
+            case [7, 7, 7]:
+                mult += 10
+            case [7, 7, 8]:
+                mult += 5
+            case [6, 7, 7]:
+                mult += 3
+            case [7, 7, x] | [x, 7, 7]:
+                mult += 2
+            case [x, y, 7] | [x, 7, y] | [7, x, y]:
+                mult += 1
+            
+            case [8, 8, 8]:
+                mult += 1000
+            case [7, 8, 8] | [6, 8, 8]:
+                mult += 11
+            case [x, 8, 8]:
+                mult += 10
+            case [x, y, 8]:
+                mult += 3
+        
+        return mult
 
     @discord.ui.button(label="Сыграть снова")
     async def play_again_btn(self, interaction: discord.Interaction, btn: discord.ui.Button) -> None:
@@ -172,81 +183,11 @@ class View(discord.ui.View):
 if __name__ == "__main__":
     print("George Droid Slots Testing Mode Activated")
 
-    class View_Test():
+    class View_Test(View):
         def __init__(self, bet):
             self.bet = bet
-            self.winnings = 0.0
             self.reels = [_Reel.get_random(), _Reel.get_random(), _Reel.get_random()]
-
-            sorted_reels: list["_Reel"] = sorted(self.reels, key=lambda x: x.value)
-
-            for elem in sorted_reels:
-                match elem:
-                    case _Reel.SKULL:
-                        self.winnings -= self.bet / 3
-                    case _Reel.PROVERKA:
-                        self.winnings += self.bet / 3
-
-            match sorted_reels:
-                case [_Reel.CHERRIES, _Reel.CHERRIES, _Reel.CHERRIES]:
-                    self.winnings += self.bet
-                case [_Reel.CHERRIES, _Reel.CHERRIES, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 3.5
-                case [_Reel.CHERRIES, _Reel.CHERRIES, _Reel.BULBORB] | [_Reel.CHERRIES, _Reel.CHERRIES, _Reel.ESQ_GRAGAS]:
-                    self.winnings += self.bet * 1.5
-                case [_Reel.CHERRIES, _Reel.CHERRIES, x] | [x, _Reel.CHERRIES, _Reel.CHERRIES]:
-                    self.winnings += self.bet * 0.5
-
-                case [_Reel.FUNGUS, _Reel.FUNGUS, _Reel.FUNGUS]:
-                    self.winnings += self.bet * 3
-                case [_Reel.CHERRIES, _Reel.FUNGUS, _Reel.FUNGUS]:
-                    self.winnings += self.bet * 2
-                case [_Reel.FUNGUS, _Reel.FUNGUS, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 3.5
-                case [_Reel.FUNGUS, _Reel.FUNGUS, _Reel.BULBORB] | [_Reel.FUNGUS, _Reel.FUNGUS, _Reel.ESQ_GRAGAS]:
-                    self.winnings += self.bet * 1.5
-                case [_Reel.FUNGUS, _Reel.FUNGUS, x] | [x, _Reel.FUNGUS, _Reel.FUNGUS]:
-                    self.winnings += self.bet * 0.5
-
-                case [_Reel.GRAGAS, _Reel.GRAGAS, _Reel.GRAGAS]:
-                    self.winnings += self.bet * 1.5
-                case [_Reel.CHERRIES, _Reel.GRAGAS, _Reel.GRAGAS] | [_Reel.FUNGUS, _Reel.GRAGAS, _Reel.GRAGAS]:
-                    self.winnings += self.bet
-                case [_Reel.GRAGAS, _Reel.GRAGAS, x] | [x, _Reel.GRAGAS, _Reel.GRAGAS]:
-                    self.winnings += self.bet * 0.5
-
-                case [_Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS]:
-                    self.winnings += self.bet * 10
-                case [_Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 6
-                case [_Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS, _Reel.BULBORB]:
-                    self.winnings += self.bet * 4
-                case [_Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS, x] | [x, _Reel.ESQ_GRAGAS, _Reel.ESQ_GRAGAS]:
-                    self.winnings += self.bet * 3
-                case [x, y, _Reel.ESQ_GRAGAS] | [x, _Reel.ESQ_GRAGAS, y] | [_Reel.ESQ_GRAGAS, x, y]:
-                    self.winnings += self.bet
-
-                case [_Reel.BULBORB, _Reel.BULBORB, _Reel.BULBORB]:
-                    self.winnings += self.bet * 10
-                case [_Reel.BULBORB, _Reel.BULBORB, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 5
-                case [_Reel.ESQ_GRAGAS, _Reel.BULBORB, _Reel.BULBORB]:
-                    self.winnings += self.bet * 3
-                case [_Reel.BULBORB, _Reel.BULBORB, x] | [x, _Reel.BULBORB, _Reel.BULBORB]:
-                    self.winnings += self.bet * 2
-                case [x, y, _Reel.BULBORB] | [x, _Reel.BULBORB, y] | [_Reel.BULBORB, x, y]:
-                    self.winnings += self.bet
-                
-                case [_Reel.NUCLEAR_BULBORB, _Reel.NUCLEAR_BULBORB, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 1000
-                case [_Reel.BULBORB, _Reel.NUCLEAR_BULBORB, _Reel.NUCLEAR_BULBORB] | [_Reel.ESQ_GRAGAS, _Reel.NUCLEAR_BULBORB, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 101
-                case [x, _Reel.NUCLEAR_BULBORB, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 100
-                case [x, y, _Reel.NUCLEAR_BULBORB]:
-                    self.winnings += self.bet * 3
-
-            self.winnings = max(round(self.winnings), 0)
+            self.winnings = max(round(self.bet * self.calc_multiplier()), 0)
     
     n = 100000
     bet = 10000
