@@ -93,7 +93,7 @@ class View(discord.ui.View):
 
         match reels_sorted_vals:
             case [3, 3, 3]:
-                mult += 1
+                mult += 2
             case [3, 3, 8]:
                 mult += 4
             case [3, 3, 7] | [3, 3, 6]:
@@ -106,14 +106,14 @@ class View(discord.ui.View):
             case [3, 4, 4]:
                 mult += 2
             case [4, 4, 8]:
-                mult += 4
+                mult += 4.5
             case [4, 4, 7] | [4, 4, 6]:
-                mult += 2
+                mult += 2.5
             case [4, 4, x] | [x, 4, 4]:
-                mult += 1
+                mult += 1.5
 
             case [5, 5, 5]:
-                mult += 1.5
+                mult += 2.5
             case [3, 5, 5] | [4, 5, 5]:
                 mult += 1
             case [5, 5, 7] | [5, 5, 6]:
