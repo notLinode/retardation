@@ -155,6 +155,9 @@ async def on_message(message: discord.Message):
         
         case ";blackjack" | ";bj":
             await commands.blackjack(message)
+        
+        case ";slots" | ";slot":
+            await commands.slots(message)
 
         case ";leaderboard" | ";leaderboards" | ";lb" | ";top":
             await commands.leaderboard(message)
