@@ -95,22 +95,22 @@ class View(discord.ui.View):
             case [3, 3, 3]:
                 mult += 1
             case [3, 3, 8]:
-                mult += 3.5
+                mult += 4
             case [3, 3, 7] | [3, 3, 6]:
-                mult += 1.5
+                mult += 2
             case [3, 3, x] | [x, 3, 3]:
-                mult += 0.5
+                mult += 1
 
             case [4, 4, 4]:
                 mult += 3
             case [3, 4, 4]:
                 mult += 2
             case [4, 4, 8]:
-                mult += 3.5
+                mult += 4
             case [4, 4, 7] | [4, 4, 6]:
-                mult += 1.5
+                mult += 2
             case [4, 4, x] | [x, 4, 4]:
-                mult += 0.5
+                mult += 1
 
             case [5, 5, 5]:
                 mult += 1.5
@@ -193,10 +193,13 @@ if __name__ == "__main__":
     bet = 10000
     winnings = []
     total = 0
+    wins_cnt = 0
     for _ in range(n):
         view = View_Test(bet)
         winnings.append(view.winnings)
         total += view.winnings
+        if view.winnings >= bet:
+            wins_cnt += 1
     winnings.sort()
     total
-    print(f"for {n} games with a bet of {bet}:\naverage:{total/n}\nmedian:{winnings[n//2]}")
+    print(f"for {n} games with a bet of {bet}:\naverage: {total/n}\nmedian: {winnings[n//2]}\nchance to win: {wins_cnt/n*100}%")
