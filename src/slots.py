@@ -131,6 +131,8 @@ class View(discord.ui.View):
                 mult += 5
             case [6, 6, 7]:
                 mult += 4
+            case [6, 8, x] | [x, 6, 8]:
+                mult += 4
             case [6, 6, x] | [x, 6, 6]:
                 mult += 3
             case [x, 6, 7] | [6, 7, x]:
