@@ -43,7 +43,7 @@ async def prompt(message: Message) -> None:
                 is_thinking: bool = True
             case _:
                 prompt = model + prompt  # User didn't specify a model, so the first word needs to be put back into the prompt
-                model = "Meta-Llama-3-1-405B-Instruct-FP8"
+                model = "Meta-Llama-3-3-70B-Instruct"
                 is_long_answer: bool = False
                 is_thinking: bool = False
 
