@@ -32,7 +32,7 @@ class _Reel(Enum):
         return cls(random.sample(
             population=[1, 2, 3, 4, 5, 6, 7, 8],
             k=1,
-            counts=[15, 35, 10, 10, 15, 9, 5, 1]
+            counts=[17, 33, 10, 10, 15, 9, 5, 1]
         )[0])
 
 
@@ -81,85 +81,25 @@ class View(discord.ui.View):
         await self.spin(cnt + 1)
 
     def calc_multiplier(self) -> float:
-        reels_sorted_vals: list[int] = sorted(list(map(lambda x: x.value, self.reels)))
+        cnts: list[int] = [0] * 9  # Emoji counts
+        for reel in self.reels:
+            cnts[reel.value-1] += 1
+
+        if cnts[3] == 2 and cnts[2] == 1:  # 2 fungi 1 cherry
+            return 2
+        if cnts[4] == 2 and (cnts[2] == 1 or cnts[3] == 1):  # 2 graga, 1 cherry/fungus
+            return 1
+
         mult: float = 0.0
 
-        for elem in reels_sorted_vals:
-            match elem:
-                case 1:
-                    mult -= 1/3
-                case 2:
-                    mult += 1/3
+        mult += cnts[1] * 4/9 - cnts[0] * 1/3  # Proverka and skulls
+        mult += 1 if (cnts[2] == 2) else 2 if (cnts[2] == 3) else 0  # Cherries
+        mult += 1.5 if (cnts[3] == 2) else 3 if (cnts[3] == 3) else 0  # Fungi
+        mult += 0.5 if (cnts[4] == 2) else 2.5 if (cnts[4] == 3) else 0  # Graga
+        mult += 1 if (cnts[5] == 1) else 3 if (cnts[5] == 2) else 10 if (cnts[5] == 3) else 0  # Esq. Grugans
+        mult += 1 if (cnts[6] == 1) else 2 if (cnts[6] == 2) else 10 if (cnts[6] == 3) else 0  # Bulborbs
+        mult += 3 if (cnts[7] == 1) else 10 if (cnts[7] == 2) else 1000 if (cnts[7] == 3) else 0  # Nuclear bulborbs
 
-        match reels_sorted_vals:
-            case [3, 3, 3]:
-                mult += 2
-            case [3, 3, 8]:
-                mult += 4
-            case [3, 3, 7] | [3, 3, 6]:
-                mult += 2
-            case [3, 3, x] | [x, 3, 3]:
-                mult += 1
-
-            case [4, 4, 4]:
-                mult += 3
-            case [3, 4, 4]:
-                mult += 2
-            case [4, 4, 8]:
-                mult += 4.5
-            case [4, 4, 7] | [4, 4, 6]:
-                mult += 2.5
-            case [4, 4, x] | [x, 4, 4]:
-                mult += 1.5
-
-            case [5, 5, 5]:
-                mult += 2.5
-            case [3, 5, 5] | [4, 5, 5]:
-                mult += 1
-            case [5, 5, 7] | [5, 5, 6]:
-                mult += 1.5
-            case [5, 5, 9]:
-                mult += 4
-            case [5, 5, x] | [x, 5, 5]:
-                mult += 0.5
-
-            case [6, 6, 6]:
-                mult += 10
-            case [6, 6, 8]:
-                mult += 6
-            case [6, 7, 8]:
-                mult += 5
-            case [6, 6, 7]:
-                mult += 4
-            case [6, 8, x] | [x, 6, 8]:
-                mult += 4
-            case [6, 6, x] | [x, 6, 6]:
-                mult += 3
-            case [x, 6, 7] | [6, 7, x]:
-                mult += 2
-            case [x, y, 6] | [x, 6, y] | [6, x, y]:
-                mult += 1
-
-            case [7, 7, 7]:
-                mult += 10
-            case [7, 7, 8]:
-                mult += 5
-            case [6, 7, 7]:
-                mult += 3
-            case [7, 7, x] | [x, 7, 7]:
-                mult += 2
-            case [x, y, 7] | [x, 7, y] | [7, x, y]:
-                mult += 1
-            
-            case [8, 8, 8]:
-                mult += 1000
-            case [7, 8, 8] | [6, 8, 8]:
-                mult += 11
-            case [x, 8, 8]:
-                mult += 10
-            case [x, y, 8]:
-                mult += 3
-        
         return mult
 
     @discord.ui.button(label="Сыграть снова")
@@ -196,12 +136,15 @@ if __name__ == "__main__":
     winnings = []
     total = 0
     wins_cnt = 0
+    ties_cnt = 0
     for _ in range(n):
         view = View_Test(bet)
         winnings.append(view.winnings)
         total += view.winnings
-        if view.winnings >= bet:
+        if view.winnings > bet:
             wins_cnt += 1
+        elif view.winnings == bet:
+            ties_cnt += 1
     winnings.sort()
     total
-    print(f"for {n} games with a bet of {bet}:\naverage: {total/n}\nmedian: {winnings[n//2]}\nchance to win: {wins_cnt/n*100}%")
+    print(f"for {n} games with a bet of {bet}:\naverage: {total/n}\nmedian: {winnings[n//2]}\nchance to win: {wins_cnt/n*100}%\nchance of a tie: {ties_cnt/n*100}%")
