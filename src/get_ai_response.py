@@ -36,7 +36,8 @@ async def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama
         return "🚫 вы даун"
 
 
-def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-405B-Instruct-FP8", should_stop_at_5000_chars: bool = True):
+def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-405B-Instruct-FP8", max_response_len: int = 5000):
+    """Yields a response from the selected model. Set `max_response_len` to 0 to make it unlimited."""
     try:
         client = openai.OpenAI(
             api_key=akash_api_key,
@@ -60,7 +61,7 @@ def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-
             yield chunk.choices[0].delta.content
 
             response_len += len(chunk.choices[0].delta.content)
-            if response_len >= 5000 and should_stop_at_5000_chars:
+            if response_len >= max_response_len and max_response_len != 0:
                 response.close()
                 break
     except Exception as e:

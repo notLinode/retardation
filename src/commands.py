@@ -31,20 +31,20 @@ async def prompt(message: Message) -> None:
         match model.lower():
             case "r1":
                 model = "DeepSeek-R1"
-                is_long_answer: bool = True
+                max_response_len: int = 0
                 is_thinking: bool = True
             case "r1dl":
                 model = "DeepSeek-R1-Distill-Llama-70B"
-                is_long_answer: bool = True
+                max_response_len: int = 20_000
                 is_thinking: bool = True
             case "r1dq":
                 model = "DeepSeek-R1-Distill-Qwen-32B"
-                is_long_answer: bool = True
+                max_response_len: int = 20_000
                 is_thinking: bool = True
             case _:
                 prompt = model + prompt  # User didn't specify a model, so the first word needs to be put back into the prompt
                 model = "Meta-Llama-3-3-70B-Instruct"
-                is_long_answer: bool = False
+                max_response_len: int = 5000
                 is_thinking: bool = False
 
         bot_msg: Message = await message.channel.send("✅\n")
@@ -53,7 +53,7 @@ async def prompt(message: Message) -> None:
         msg_len: int = len(bot_msg.content)
         response_len: int = msg_len
 
-        for chunk in ai.stream_response(bot_vars.ai_key, prompt, model, not is_long_answer):
+        for chunk in ai.stream_response(bot_vars.ai_key, prompt, model, max_response_len):
             if chunk is None:
                 break
 
@@ -90,7 +90,7 @@ async def prompt(message: Message) -> None:
                 chunk_buf.clear()
                 chunk_buf_len = 0
 
-                if response_len >= 5000 and not is_long_answer:
+                if response_len >= max_response_len and max_response_len != 0:
                     await bot_msg.edit(content=bot_msg.content + "\n\nкароче я заебался писать иди нахуй")
                     break
 
