@@ -93,7 +93,7 @@ class View(discord.ui.View):
         mult: float = 0.0
 
         mult += cnts[1] * 4/9 - cnts[0] * 1/3  # Proverka and skulls
-        mult += 1 if (cnts[2] == 2) else 2 if (cnts[2] == 3) else 0  # Cherries
+        mult += 1 if (cnts[2] == 2) else 2.5 if (cnts[2] == 3) else 0  # Cherries
         mult += 1.5 if (cnts[3] == 2) else 3 if (cnts[3] == 3) else 0  # Fungi
         mult += 0.5 if (cnts[4] == 2) else 2.5 if (cnts[4] == 3) else 0  # Graga
         mult += 1 if (cnts[5] == 1) else 3 if (cnts[5] == 2) else 10 if (cnts[5] == 3) else 0  # Esq. Grugans
