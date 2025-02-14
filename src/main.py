@@ -144,7 +144,7 @@ async def on_message(message: discord.Message):
         case ";do-tamagotchi" | ";tamagotchi":
             await commands.do_tamagotchi(message)
 
-        case ";tokens" | ";tok":
+        case ";tokens" | ";tok" | ";token" | ";balance" | ";bal":
             await commands.tokens(message)
         
         case ";pay":
