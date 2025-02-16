@@ -1,4 +1,8 @@
-This is a repository for an **AI Discord bot**.
+# Retardation
+
+Retardation is an **AI bot** that talks to users on Discord servers, provides a virtual economy, and acts like a tamagotchi pet.
+
+## Overview
 
 The bot utilizes LLM's such as Meta's Llama to send messages in Discord channels after every couple of user messages.
 
@@ -8,7 +12,7 @@ The bot has an economy where the money is called **tokens**. Tokens are given to
 
 The bot also constantly displays a status with its **health**, **hunger**, and **litterbox fullness**. If the bot is allowed to die by starving to death or by intentionally hurting it, it will refuse to do anything until it is revived. Starving can be disabled with the `;do-tamagotchi` command.
 
-# Setting up
+## Setting up
 
 First, you'll need to clone the repository with
 ```
@@ -34,7 +38,7 @@ $ python3 src/main.py
 
 Each instance of this bot is meant to be used by a __**single Discord server only**__.
 
-# Internal structure
+## Internal structure
 
 The main entry point of the bot is `main.py`. All of the commands and some other functionality like automessaging is contained in `commands.py`. Talking to Akash Chat API is done in `get_ai_response.py`. Stuff that needs to happen periodically, like updating the bot's status or the shop, is done in `tasks.py`.
 
