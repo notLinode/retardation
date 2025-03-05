@@ -8,7 +8,7 @@ _REEL_EMOJIS: tuple = (
     ":skull:", "<:proverka:1307010119824965723>", ":cherries:", ":mushroom:",
     "<:gragas:1336062411970580511>", "<:esq_gragas:1336062410041196646>",
     "<:bulborb:1336061550498287616>", "<:nuclear_bulborb:1336061387847372830>",
-    "<a:slots:1336120636635873390>", ":star:"
+    ":star:", "<a:slots:1336120636635873390>"
 )
 
 
@@ -32,7 +32,7 @@ class _Reel(Enum):
         return cls(random.sample(
             population=[1, 2, 3, 4, 5, 6, 7, 8, 9],
             k=1,
-            counts=[17, 33, 10, 10, 15, 9, 5, 1, 150]
+            counts=[17, 33, 10, 10, 15, 9, 5, 1, 33]
         )[0])
 
 
@@ -44,6 +44,10 @@ class View(discord.ui.View):
     reels: list[_Reel]
     winnings: float
 
+    bonus_spins: int
+    total_winnings: int
+    is_bonus: bool
+
     def __init__(self, bet: int, userid: int, token_info: list[int]):
         super().__init__(timeout=30)
         self.bet = bet
@@ -51,19 +55,24 @@ class View(discord.ui.View):
         self.player_token_info = token_info
         self.reels = [_Reel.SPINNING, _Reel.SPINNING, _Reel.SPINNING]
         self.winnings = 0.0
+
         self.bonus_spins = 0
+        self.total_winnings = 0.0
+        self.is_bonus = False
 
-        if self.bonus_spins == 0:
-            self.player_token_info[0] -= self.bet
-
+        self.player_token_info[0] -= self.bet
 
     def __str__(self) -> str:
-        s: str = f"<@{self.player_userid}> | :coin: Ставка: {self.bet}\n"
-        s += f"> {self.reels[0].to_emoji()} {self.reels[1].to_emoji()} {self.reels[2].to_emoji()}\n\n"
-        s += f"**Навар: {('+' if self.winnings >= 0 else '') + str(int(self.winnings))} :coin:**\n"
+        s: str = f"<@{self.player_userid}> | :coin: Ставка: `{self.bet}`\n"
+        s += f"> {self.reels[0].to_emoji()} {self.reels[1].to_emoji()} {self.reels[2].to_emoji()}"
 
-        if self.bonus_spins > 0:
-            s += f"Бонуска: {self.bonus_spins}"
+        if self.is_bonus:
+            s += f"  {('+' if self.winnings >= 0 else '') + str(int(self.winnings))} :coin:"
+            s += "\n\n<:Screenshot:1278850856711880787> Бонусная игра!\n"
+            s += f"Слот закончится через `{self.bonus_spins}` спинов\n"
+            s += f"**ГЛОБАЛЬНЫЙ НАВАР: {('+' if self.total_winnings >= 0 else '') + str(int(self.total_winnings))} :coin:**\n\n"
+        else:
+            s += f"\n\n**Навар: {('+' if self.winnings >= 0 else '') + str(int(self.winnings))} :coin:**"
 
         return s
 
@@ -76,20 +85,29 @@ class View(discord.ui.View):
             self.player_token_info[0] += int(self.winnings)
 
             if self.reels[0] == self.reels[1] == self.reels[2] == _Reel.STAR: #BONUSKA ACTIVATED SUKA
+                self.is_bonus = True
                 self.bonus_spins = 5
 
             await self.msg.edit(content=str(self), view=self)
 
             if self.bonus_spins > 0:
                 self.bonus_spins -= 1
-                await asyncio.sleep(1)
+                self.total_winnings += self.winnings
+                self.reels = [_Reel.SPINNING, _Reel.SPINNING, _Reel.SPINNING]
+                await asyncio.sleep(0.5)
                 await self.spin(0)
             return
 
-
         await asyncio.sleep(0.5)
 
-        self.reels[cnt] = _Reel.get_random()
+        if self.reels[0] == self.reels[1] == _Reel.STAR:
+            if random.random() < 0.4:
+                self.reels[cnt] = _Reel.STAR
+            else:
+                self.reels[cnt] = _Reel.get_random()
+        else:
+            self.reels[cnt] = _Reel.get_random()
+
         self.winnings = max(round(self.bet * self.calc_multiplier()), 0)
 
         await self.msg.edit(content=str(self), view=self)
@@ -97,7 +115,7 @@ class View(discord.ui.View):
         await self.spin(cnt + 1)
 
     def calc_multiplier(self) -> float:
-        cnts: list[int] = [0] * 9  # Emoji counts
+        cnts: list[int] = [0] * 10  # Emoji counts
         for reel in self.reels:
             cnts[reel.value - 1] += 1
 
@@ -108,7 +126,7 @@ class View(discord.ui.View):
 
         mult: float = 0.0
 
-        mult += cnts[1] * 4 / 9 - cnts[0] * 1 / 3  # Proverka and skulls
+        mult += cnts[1] * 1/3 - cnts[0] * 1/3  + cnts[8] * 1/3  # Proverka, skulls, and stars
         mult += 1 if (cnts[2] == 2) else 2.5 if (cnts[2] == 3) else 0  # Cherries
         mult += 1.5 if (cnts[3] == 2) else 3 if (cnts[3] == 3) else 0  # Fungi
         mult += 0.5 if (cnts[4] == 2) else 2.5 if (cnts[4] == 3) else 0  # Graga
@@ -145,11 +163,31 @@ if __name__ == "__main__":
     class View_Test(View):
         def __init__(self, bet):
             self.bet = bet
-            self.reels = [_Reel.get_random(), _Reel.get_random(), _Reel.get_random()]
-            self.winnings = max(round(self.bet * self.calc_multiplier()), 0)
+            self.winnings = 0.0
+            self.spins_left = 1
+            self.bonus_cnt = 0
+
+            while self.spins_left > 0:
+                self.reels = [_Reel.get_random(), _Reel.get_random(), _Reel.SPINNING]
+
+                if self.reels[0] == self.reels[1] == _Reel.STAR:
+                    if random.random() < 0.4:
+                        self.reels[2] = _Reel.STAR
+                    else:
+                        self.reels[2] = _Reel.get_random()
+                else:
+                    self.reels[2] = _Reel.get_random()
+
+                self.winnings += max(round(self.bet * self.calc_multiplier()), 0)
+
+                if self.reels[0] == self.reels[1] == self.reels[2] == _Reel.STAR:
+                    self.spins_left = 5
+                    self.bonus_cnt += 1
+                
+                self.spins_left -= 1
 
 
-    n = 10000
+    n = 100000
     bet = 10000
     winnings = []
     total = 0
@@ -164,7 +202,7 @@ if __name__ == "__main__":
             wins_cnt += 1
         elif view.winnings == bet:
             ties_cnt += 1
-        if view.reels[0] == view.reels[1] == view.reels[2] == _Reel.STAR:
+        if view.bonus_cnt:
             bonus_cnt += 1
     winnings.sort()
     total
