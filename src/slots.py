@@ -32,7 +32,7 @@ class _Reel(Enum):
         return cls(random.sample(
             population=[1, 2, 3, 4, 5, 6, 7, 8, 9],
             k=1,
-            counts=[17, 33, 10, 10, 15, 9, 5, 1, 33]
+            counts=[17, 33, 10, 10, 15, 9, 5, 1, 40]
         )[0])
 
 
@@ -86,7 +86,7 @@ class View(discord.ui.View):
 
             if self.reels == [_Reel.STAR, _Reel.STAR, _Reel.STAR]:
                 self.is_bonus = True
-                self.bonus_spins = 5
+                self.bonus_spins = 4
 
             await self.msg.edit(content=str(self), view=self)
 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
                 self.winnings += max(round(self.bet * self.calc_multiplier()), 0)
 
                 if self.reels == [_Reel.STAR, _Reel.STAR, _Reel.STAR]:
-                    self.spins_left = 5
+                    self.spins_left = 4
                     self.bonus_cnt += 1
                 
                 self.spins_left -= 1
