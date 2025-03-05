@@ -84,7 +84,7 @@ class View(discord.ui.View):
         if cnt == 3:
             self.player_token_info[0] += int(self.winnings)
 
-            if self.reels[0] == self.reels[1] == self.reels[2] == _Reel.STAR: #BONUSKA ACTIVATED SUKA
+            if self.reels == [_Reel.STAR, _Reel.STAR, _Reel.STAR]:
                 self.is_bonus = True
                 self.bonus_spins = 5
 
@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
                 self.winnings += max(round(self.bet * self.calc_multiplier()), 0)
 
-                if self.reels[0] == self.reels[1] == self.reels[2] == _Reel.STAR:
+                if self.reels == [_Reel.STAR, _Reel.STAR, _Reel.STAR]:
                     self.spins_left = 5
                     self.bonus_cnt += 1
                 
