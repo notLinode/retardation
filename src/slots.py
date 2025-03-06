@@ -8,7 +8,7 @@ _REEL_EMOJIS: tuple = (
     ":skull:", "<:proverka:1307010119824965723>", ":cherries:", ":mushroom:",
     "<:gragas:1336062411970580511>", "<:esq_gragas:1336062410041196646>",
     "<:bulborb:1336061550498287616>", "<:nuclear_bulborb:1336061387847372830>",
-    ":star:", "<a:slots:1336120636635873390>"
+    ":star:", ":egg:", "<a:slots:1336120636635873390>"
 )
 
 
@@ -22,7 +22,8 @@ class _Reel(Enum):
     BULBORB = 7
     NUCLEAR_BULBORB = 8
     STAR = 9
-    SPINNING = 10
+    EGG = 10
+    SPINNING = 11
 
     def to_emoji(self) -> str:
         return _REEL_EMOJIS[self.value - 1]
@@ -30,9 +31,9 @@ class _Reel(Enum):
     @classmethod
     def get_random(cls) -> "_Reel":
         return cls(random.sample(
-            population=[1, 2, 3, 4, 5, 6, 7, 8, 9],
+            population=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             k=1,
-            counts=[17, 33, 10, 10, 15, 9, 5, 1, 40]
+            counts=[17, 33, 10, 10, 15, 9, 5, 1, 40, 50]
         )[0])
 
 
@@ -41,10 +42,12 @@ class View(discord.ui.View):
     player_userid: int
     player_token_info: list[int]
     msg: discord.Message
-    reels: list[_Reel]
+    reels: list[_Reel] #3x1
+    pirots_bonus: list[list[_Reel]] #5x5
     winnings: float
 
     bonus_spins: int
+    pirots_spins: int
     total_winnings: int
     is_bonus: bool
 
@@ -54,23 +57,32 @@ class View(discord.ui.View):
         self.player_userid: int = userid
         self.player_token_info = token_info
         self.reels = [_Reel.SPINNING, _Reel.SPINNING, _Reel.SPINNING]
+        self.pirots_bonus = [_Reel.SPINNING for _ in ragne(5) for _ in range(5)]
         self.winnings = 0.0
 
         self.bonus_spins = 0
+        self.pirots_spins = 0
         self.total_winnings = 0.0
         self.is_bonus = False
+        self.is_pirots = False
 
         self.player_token_info[0] -= self.bet
 
     def __str__(self) -> str:
         s: str = f"<@{self.player_userid}> | :coin: Ставка: `{self.bet}`\n"
-        s += f"> {self.reels[0].to_emoji()} {self.reels[1].to_emoji()} {self.reels[2].to_emoji()}"
+        for row in self.reels:
+            s += "> " + " ".join(reel.to_emoji() for reel in row) + "\n"
 
         if self.is_bonus:
             s += f"  {('+' if self.winnings >= 0 else '') + str(int(self.winnings))} :coin:"
             s += "\n\n<:Screenshot:1278850856711880787> Бонусная игра!\n"
             s += f"Слот закончится через `{self.bonus_spins}` спинов\n"
             s += f"**ГЛОБАЛЬНЫЙ НАВАР: {('+' if self.total_winnings >= 0 else '') + str(int(self.total_winnings))} :coin:**\n\n"
+        elif self.is_pirots:
+            s += f"  {('+' if self.winnings >= 0 else '') + str(int(self.winnings))} :coin:"
+            s += "\n\n<:pirate_flag:> Бонусная игра с птичками!\n"
+            s += f"Слот закончится через `{self.pirots_spins}` спинов\n"
+            s += f"**ПИРАТСКИЙ НАВАР: {('+' if self.total_winnings >= 0 else '') + str(int(self.total_winnings))} :coin:**\n\n"
         else:
             s += f"\n\n**Навар: {('+' if self.winnings >= 0 else '') + str(int(self.winnings))} :coin:**"
 
@@ -81,6 +93,21 @@ class View(discord.ui.View):
         await self.spin()
 
     async def spin(self, cnt: int = 0) -> None:
+        if cnt == 3:
+            if self.reels == [_Reel.EGG, _Reel.EGG, _Reel.EGG]:
+                self.pirots_bonus = True
+                self.pirots_spins = 4
+
+                await self.msg.edit(content=str(self), view=self)
+
+                if self.pirots_spins > 0:
+                    self.pirots_spins -= 1
+                    self.total_winnings += self.winnings
+                    self.reels = [_Reel.SPINNING for _ in range(5) for _ in range(5)]
+                    await asyncio.sleep(0.5)
+                    await self.spin(0)
+                return
+
         if cnt == 3:
             self.player_token_info[0] += int(self.winnings)
 
@@ -126,7 +153,7 @@ class View(discord.ui.View):
 
         mult: float = 0.0
 
-        mult += cnts[1] * 1/3 - cnts[0] * 1/3  + cnts[8] * 1/3  # Proverka, skulls, and stars
+        mult += cnts[1] * 1 / 3 - cnts[0] * 1 / 3 + cnts[8] * 1 / 3  # Proverka, skulls, and stars
         mult += 1 if (cnts[2] == 2) else 2.5 if (cnts[2] == 3) else 0  # Cherries
         mult += 1.5 if (cnts[3] == 2) else 3 if (cnts[3] == 3) else 0  # Fungi
         mult += 0.5 if (cnts[4] == 2) else 2.5 if (cnts[4] == 3) else 0  # Graga
@@ -166,6 +193,7 @@ if __name__ == "__main__":
             self.winnings = 0.0
             self.spins_left = 1
             self.bonus_cnt = 0
+            self.pirots_cnt = 0
 
             while self.spins_left > 0:
                 self.reels = [_Reel.get_random(), _Reel.get_random(), _Reel.SPINNING]
@@ -178,22 +206,42 @@ if __name__ == "__main__":
                 else:
                     self.reels[2] = _Reel.get_random()
 
+                print(f'[{self.reels[0].value, self.reels[1].value, self.reels[2].value}]')
+
+                if self.reels == [_Reel.EGG, _Reel.EGG, _Reel.EGG]:
+                    pirots_board = [
+                        [_Reel.get_random() for _ in range(5)] for _ in range(5)
+                    ]
+                    print("EGG EGG EGG")
+                    for row in pirots_board:
+                        print([" ".join(str(reel.value) for reel in row)])
+                    print()
+
                 self.winnings += max(round(self.bet * self.calc_multiplier()), 0)
 
                 if self.reels == [_Reel.STAR, _Reel.STAR, _Reel.STAR]:
                     self.spins_left = 4
                     self.bonus_cnt += 1
-                
+                    print('STAR STAR STAR')
+
                 self.spins_left -= 1
 
 
-    n = 100000
-    bet = 10000
+                if self.reels == [_Reel.EGG, _Reel.EGG, _Reel.EGG]:
+                    self.spins_left = 4
+                    self.pirots_cnt += 1
+
+                self.spins_left -= 1
+
+
+    n = 1000
+    bet = 10
     winnings = []
     total = 0
     wins_cnt = 0
     ties_cnt = 0
     bonus_cnt = 0
+    pirots_cnt = 0
     for _ in range(n):
         view = View_Test(bet)
         winnings.append(view.winnings)
@@ -204,8 +252,11 @@ if __name__ == "__main__":
             ties_cnt += 1
         if view.bonus_cnt:
             bonus_cnt += 1
+        if view.pirots_cnt:
+            pirots_cnt += 1
     winnings.sort()
     total
     print(
         f"for {n} games with a bet of {bet}:\naverage: {total / n}\nmedian: {winnings[n // 2]}\nchance to win: "
-        f"{wins_cnt / n * 100}%\nchance of a tie: {ties_cnt / n * 100}%\nbonus chance: {bonus_cnt / n * 100}%")
+        f"{wins_cnt / n * 100}%\nchance of a tie: {ties_cnt / n * 100}%\nbonus chance: {bonus_cnt / n * 100}%"
+        f"\npirots chance: {pirots_cnt / n * 100}%")
