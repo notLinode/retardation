@@ -12,6 +12,7 @@ _REEL_EMOJIS: tuple = (
 
 _BIRD_EMOJIS: tuple = (
     ":bird:", ":black_bird:", ":baby_chick:", ":red_square:",
+    ":white_square_button:", ":yellow_square:", ":red_square:",
     ":white_square_button:", ":yellow_square:"
 )
 
@@ -40,19 +41,22 @@ class _Reel(Enum):
             counts=[17, 33, 10, 10, 15, 9, 5, 1, 100, 400]
         )[0])
 
-class _ReelBirds(Enum):
-    RBIRD = 1 # red bird
-    BBIRD = 2 # black bird
-    YBIRD = 3 # yellow bird
+class _Pirots(Enum):
+    RED_BIRD = 1
+    BLACK_BIRD = 2
+    YELLOW_BIRD = 3
     RED_GEM = 4
     BLACK_GEM = 5
     YELLOW_GEM = 6
+    RED_GEM_CLAIMED = 7
+    BLACK_GEM_CLAIMED = 8
+    YELLOW_GEM_CLAIMED = 9
 
     def to_emoji(self) -> str:
         return _BIRD_EMOJIS[self.value - 1]
 
     @classmethod
-    def get_random(cls) -> "_ReelBirds":
+    def get_random(cls) -> "_Pirots":
         return cls(random.sample(
             population=[4, 5, 6],
             k=1,
@@ -66,7 +70,7 @@ class View(discord.ui.View):
     player_token_info: list[int]
     msg: discord.Message
     reels: list[_Reel]  # 3x1
-    pirots_bonus: list[list[_Reel]]  # 5x5
+    pirots_bonus: list[list[_Pirots]]  # 5x5
     winnings: float
 
     bonus_spins: int
@@ -98,70 +102,93 @@ class View(discord.ui.View):
 
         self.player_token_info[0] -= self.bet
 
-    def pirots_game(self) -> None:
+    def reset_pirots_positions(self) -> None:
         self.pirots_bonus = [[None for _ in range(5)] for _ in range(5)]
 
         positions = [(x, y) for x in range(5) for y in range(5)]
         random.shuffle(positions)
 
-        self.pirots_bonus[positions[0][0]][positions[0][1]] = _ReelBirds.RBIRD
-        self.pirots_bonus[positions[1][0]][positions[1][1]] = _ReelBirds.BBIRD
-        self.pirots_bonus[positions[2][0]][positions[2][1]] = _ReelBirds.YBIRD
+        self.pirots_bonus[positions[0][0]][positions[0][1]] = _Pirots.RED_BIRD
+        self.pirots_bonus[positions[1][0]][positions[1][1]] = _Pirots.BLACK_BIRD
+        self.pirots_bonus[positions[2][0]][positions[2][1]] = _Pirots.YELLOW_BIRD
 
         # rand gem positions
         for x in range(5):
             for y in range(5):
                 if self.pirots_bonus[x][y] is None:
-                    self.pirots_bonus[x][y] = _ReelBirds.get_random()
+                    self.pirots_bonus[x][y] = _Pirots.get_random()
 
     async def move_birds(self) -> float:
-        winnings = 0.0
-        moved = False
+        winnings: float = 0.0
+        moved: bool = False
 
-
-        directions = [(-1,0), (1,0), (0,-1),(0,1)] # up down left right
         for x in range(5):
             for y in range(5):
-                bird = self.pirots_bonus[x][y]
-                if bird in [_ReelBirds.RBIRD, _ReelBirds.BBIRD, _ReelBirds.YBIRD]:
-                    target_gem = {
-                        _ReelBirds.RBIRD: _ReelBirds.RED_GEM,
-                        _ReelBirds.BBIRD: _ReelBirds.BLACK_GEM,
-                        _ReelBirds.YBIRD: _ReelBirds.YELLOW_GEM
-                    }[bird]
+                cell: _Pirots = self.pirots_bonus[x][y]
+                if cell in [_Pirots.RED_BIRD, _Pirots.BLACK_BIRD, _Pirots.YELLOW_BIRD]:
+                    cluster: list[tuple[int, int]] = self.map_gem_cluster(
+                        target_gem=_Pirots(cell.value + 3),
+                        bird_position=(x, y),
+                        cluster=list()
+                    )
+                    
+                    for i in range(1, len(cluster)):
+                        gem = cluster[i]
+                        self.pirots_bonus[gem[0]][gem[1]] = cell
 
-                    # neighboring cells
-                    for dx, dy in directions:
-                        nx, ny = x + dx, y + dy
-                        if 0 <= nx < 5 and 0 <= ny < 5 and self.pirots_bonus[nx][ny] == target_gem:
-                            # eat gem and move
-                            self.pirots_bonus[nx][ny] = bird
-                            self.pirots_bonus[x][y] = None
-                            winnings += self.bet * 0.5
-                            moved = True
+                        prev_position = cluster[i-1]
+                        self.pirots_bonus[prev_position[0]][prev_position[1]] = None
 
-                            await self.msg.edit(content=str(self), view=self)
-                            await asyncio.sleep(1)
-                            break
+                        winnings += self.bet * 0.5
+                        moved = True
+
+                        await self.msg.edit(content=str(self), view=self)
+                        await asyncio.sleep(0.5)
 
         if not moved:
-            self.pirots_game()
+            self.reset_pirots_positions()
             await self.msg.edit(content=str(self), view=self)
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
+        else:
+            self.pirots_move_empty_cells_up()
+            await self.msg.edit(content=str(self), view=self)
+            await asyncio.sleep(0.5)
+            await self.move_birds()
 
         return winnings
 
+    def map_gem_cluster(
+            self,
+            target_gem: _Pirots,
+            bird_position: tuple[int, int],
+            cluster: list[tuple[int, int]]
+    ) -> list[tuple[int, int]]:
+        if len(cluster) == 0:
+            cluster.append(bird_position)
 
-    def fill_empty_cells(self) -> None:
-        for y in range(5):
-            # collect all gems in column
-            column = [self.pirots_bonus[x][y] for x in range(5) if self.pirots_bonus[x][y] is not None]
-            #
-            for x in range(5 - len(column)):
-                self.pirots_bonus[x][y] = None
-            for x in range(5 - len(column), 5):
-                self.pirots_bonus[x][y] = column[x - (5 - len(column))]
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
+        for dx, dy in directions:
+            nx = bird_position[0] + dx
+            ny = bird_position[1] + dy
+
+            if (0 <= nx < 5) and (0 <= ny < 5) and (self.pirots_bonus[nx][ny] == target_gem):
+                cluster.append((nx, ny))
+                self.pirots_bonus[nx][ny] = _Pirots(target_gem.value + 3)
+                self.map_gem_cluster(target_gem, (nx, ny), cluster)
+
+        return cluster
+
+    def pirots_move_empty_cells_up(self) -> None:
+        for x in range(5):
+            free_cells = []
+            for y in range(4, -1, -1):
+                if self.pirots_bonus[x][y] is None:
+                    free_cells.append(y)
+                elif len(free_cells) > 0:
+                    self.pirots_bonus[x][free_cells[0]] = self.pirots_bonus[x][y]
+                    free_cells.pop(0)
+                    free_cells.append(y)
 
     def __str__(self) -> str:
         s: str = f"<@{self.player_userid}> | :coin: Ставка: `{self.bet}`\n"
@@ -171,7 +198,7 @@ class View(discord.ui.View):
             s += "**:pirate_flag: Бонусная игра с птичками!**\n"
             for row in self.pirots_bonus:
                 s += "> " + " ".join(reel.to_emoji() if reel is not None else ":black_large_square:" for reel in row) + "\n"
-            s += f"Птички улетят через: `{self.pirots_spins}`спинов :wing:\n"
+            s += f"Птички улетят через: `{self.pirots_spins}` спинов :wing:\n"
             s += f"\n**ПИРАТСКИЙ НАВАР: {('+' if self.total_winnings >= 0 else '') + str(int(self.total_winnings))} :coin:**"
         else:
             # 3x1
@@ -189,47 +216,37 @@ class View(discord.ui.View):
 
     async def set_msg_and_spin(self, msg: discord.Message) -> None:
         self.msg = msg
-        await self.spin()
-
+        self.reels = [_Reel.EGG, _Reel.EGG, _Reel.EGG]  # TODO
+        await self.spin(3)  # TODO
 
     async def spin(self, cnt: int = 0) -> None:
         if self.is_pirots:
-            if cnt == 5:
-                self.pirots_spins -= 1
+            self.reset_pirots_positions()
+            await asyncio.sleep(1.5)
+            await self.msg.edit(content=str(self), view=self)
 
-                self.winnings = await self.move_birds()
-                self.total_winnings += self.winnings
+            self.winnings = await self.move_birds()
+            self.total_winnings += self.winnings
 
-                self.fill_empty_cells()
+            if self.pirots_spins <= 0:
+                self.is_pirots = False
 
-                if self.pirots_spins < 0:
-                    self.is_pirots = False
-
-                    if self.saved_bonus_spins > 0:
-                        self.is_bonus = True
-                        self.bonus_spins = self.saved_bonus_spins
-                        self.total_winnings += self.saved_bonus_winnings
-                        self.saved_bonus_spins = 0
-                        self.saved_bonus_winnings = 0.0
+                if self.saved_bonus_spins > 0:
+                    self.is_bonus = True
+                    self.bonus_spins = self.saved_bonus_spins
+                    self.total_winnings += self.saved_bonus_winnings
+                    self.saved_bonus_spins = 0
+                    self.saved_bonus_winnings = 0.0
 
                     await self.msg.edit(content=str(self), view=self)
+                    await asyncio.sleep(0.5)
+                    await self.spin(0)
 
-                    if self.is_bonus:
-                        await asyncio.sleep(0.5)
-                        await self.spin(0)
-                    return
-
-                self.pirots_game()
-                await asyncio.sleep(0.5)
-                await self.spin(0)
                 return
 
+            self.pirots_spins -= 1
             await asyncio.sleep(0.5)
-
-            self.winnings = max(round(self.bet * self.calc_multiplier()), 0)
-
-            await self.msg.edit(content=str(self), view=self)
-            await self.spin(cnt + 1)
+            await self.spin()
 
         elif self.is_bonus:
             if cnt == 3:
@@ -245,7 +262,6 @@ class View(discord.ui.View):
                     await self.msg.edit(content=str(self), view=self)
                     await asyncio.sleep(0.5)
                     await self.spin(0)
-                    return
 
 
                 if self.reels == [_Reel.STAR, _Reel.STAR, _Reel.STAR]:
@@ -260,7 +276,6 @@ class View(discord.ui.View):
                 self.reels = [_Reel.SPINNING, _Reel.SPINNING, _Reel.SPINNING]
                 await asyncio.sleep(0.5)
                 await self.spin(0)
-                return
 
             await asyncio.sleep(0.5)
 
@@ -277,38 +292,42 @@ class View(discord.ui.View):
             await self.msg.edit(content=str(self), view=self)
             await self.spin(cnt + 1)
 
+        if cnt == 3:
+            self.player_token_info[0] += int(self.winnings)
+
+            if self.reels == [_Reel.STAR, _Reel.STAR, _Reel.STAR]:
+                self.is_bonus = True
+                self.bonus_spins = 4
+            elif self.reels == [_Reel.EGG, _Reel.EGG, _Reel.EGG]:
+                self.is_pirots = True
+                self.pirots_spins = 5
+
+            await self.msg.edit(content=str(self), view=self)
+
+            if self.is_bonus:
+                await asyncio.sleep(0.5)
+                await self.spin(0)
+            
+            if self.is_pirots:
+                await asyncio.sleep(0.5)
+                await self.spin()
+
+            return
+
+        await asyncio.sleep(0.5)
+
+        if self.reels[0] == self.reels[1] == _Reel.STAR:
+            if random.random() < 0.4:
+                self.reels[cnt] = _Reel.STAR
+            else:
+                self.reels[cnt] = _Reel.get_random()
         else:
-            if cnt == 3:
-                self.player_token_info[0] += int(self.winnings)
+            self.reels[cnt] = _Reel.get_random()
 
-                if self.reels == [_Reel.STAR, _Reel.STAR, _Reel.STAR]:
-                    self.is_bonus = True
-                    self.bonus_spins = 4
-                elif self.reels == [_Reel.EGG, _Reel.EGG, _Reel.EGG]:
-                    self.is_pirots = True
-                    self.pirots_spins = 5
+        self.winnings = max(round(self.bet * self.calc_multiplier()), 0)
 
-                await self.msg.edit(content=str(self), view=self)
-
-                if self.is_bonus or self.is_pirots:
-                    await asyncio.sleep(0.5)
-                    await self.spin(0)
-                return
-
-            await asyncio.sleep(0.5)
-
-            if self.reels[0] == self.reels[1] == _Reel.STAR:
-                if random.random() < 0.4:
-                    self.reels[cnt] = _Reel.STAR
-                else:
-                    self.reels[cnt] = _Reel.get_random()
-            else:
-                self.reels[cnt] = _Reel.get_random()
-
-            self.winnings = max(round(self.bet * self.calc_multiplier()), 0)
-
-            await self.msg.edit(content=str(self), view=self)
-            await self.spin(cnt + 1)
+        await self.msg.edit(content=str(self), view=self)
+        await self.spin(cnt + 1)
 
     def calc_multiplier(self) -> float:
         cnts: list[int] = [0] * 11  # Emoji counts
