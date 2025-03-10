@@ -38,7 +38,7 @@ class _Reel(Enum):
         return cls(random.sample(
             population=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             k=1,
-            counts=[17, 33, 10, 10, 15, 9, 5, 1, 37, 37]
+            counts=[17, 33, 10, 10, 15, 9, 5, 1, 37, 30]
         )[0])
     
 
