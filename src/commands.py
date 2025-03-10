@@ -302,6 +302,8 @@ async def do_tamagotchi(message: Message) -> None:
 
 async def tokens(message: Message) -> None:
     async with message.channel.typing():
+        bot_vars.user_interaction_tokens[message.author.id][0] = int(bot_vars.user_interaction_tokens[message.author.id][0])
+
         tok_str_list: list[str] = message.content.split(maxsplit=1)
 
         if len(tok_str_list) != 2:
