@@ -337,6 +337,7 @@ class View(discord.ui.View):
 
             if self.bonus_spins < 0:
                 self.is_bonus = False
+                self.player_token_info[0] += self.total_winnings
                 await self.msg.edit(content=str(self), view=self)
                 return
 
