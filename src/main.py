@@ -143,6 +143,9 @@ async def on_message(message: discord.Message):
         
         case ";do-tamagotchi" | ";tamagotchi":
             await commands.do_tamagotchi(message)
+        
+        case ";do-automessage" | ";automessage" | ";automessaging" | "automsg":
+            await commands.do_automessage(message)
 
         case ";tokens" | ";tok" | ";token" | ";balance" | ";bal":
             await commands.tokens(message)

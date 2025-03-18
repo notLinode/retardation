@@ -21,6 +21,7 @@ class BotVariables:
     setting_message_interval: int = 7
     setting_message_interval_is_random: bool = True
     message_interval_random: int = 4
+    do_automessage: bool = True
 
     SETTING_OWN_MESSAGE_MEMORY_MIN: int = 1
     SETTING_OWN_MESSAGE_MEMORY_MAX: int = 10
@@ -107,6 +108,7 @@ class BotVariables:
             self.setting_message_interval,
             self.setting_message_interval_is_random,
             self.message_interval_random,
+            self.do_automessage,
             self.SETTING_OWN_MESSAGE_MEMORY_MIN,
             self.SETTING_OWN_MESSAGE_MEMORY_MAX,
             self.setting_own_message_memory,
@@ -145,6 +147,7 @@ class BotVariables:
                             row["setting_message_interval_is_random"] == "True"
                         ),
                         message_interval_random        = int(row["message_interval_random"]),
+                        do_automessage                 = row.get("do_automessage", "True") == "True",
                         SETTING_OWN_MESSAGE_MEMORY_MIN = int(row["SETTING_OWN_MESSAGE_MEMORY_MIN"]),
                         SETTING_OWN_MESSAGE_MEMORY_MAX = int(row["SETTING_OWN_MESSAGE_MEMORY_MAX"]),
                         setting_own_message_memory     = int(row["setting_own_message_memory"]),
@@ -190,6 +193,7 @@ class _BotVariablesDto:
     setting_message_interval: int
     setting_message_interval_is_random: bool
     message_interval_random: int
+    do_automessage: bool
 
     SETTING_OWN_MESSAGE_MEMORY_MIN: int
     SETTING_OWN_MESSAGE_MEMORY_MAX: int

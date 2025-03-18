@@ -300,6 +300,14 @@ async def do_tamagotchi(message: Message) -> None:
         await message.reply(":white_check_mark: режим выживания выключен..... НАВСЕГДА.......")
 
 
+async def do_automessage(message: Message) -> None:
+    bot_vars.do_automessage = not bot_vars.do_automessage
+    if bot_vars.do_automessage:
+        await message.reply("Я СНОВА БУДУ ГОВОРИТь")
+    else:
+        await message.reply(":white_check_mark: прощайте..... НАВСЕГДА.......")
+
+
 async def tokens(message: Message) -> None:
     async with message.channel.typing():
         bot_vars.user_interaction_tokens[message.author.id][0] = int(bot_vars.user_interaction_tokens[message.author.id][0])
@@ -591,6 +599,9 @@ async def process_tokens_info(message: Message) -> None:
 
 
 async def automessage(message: Message) -> None:
+    if not bot_vars.do_automessage:
+        return
+
     if message.channel.id in bot_vars.banned_automsg_channels:
         return
 
