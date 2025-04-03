@@ -1,19 +1,15 @@
 import discord
 import asyncio
+
 from enum import Enum
 import random
+
 
 _REEL_EMOJIS: tuple = (
     ":skull:", "<:proverka:1307010119824965723>", ":cherries:", ":mushroom:",
     "<:gragas:1336062411970580511>", "<:esq_gragas:1336062410041196646>",
     "<:bulborb:1336061550498287616>", "<:nuclear_bulborb:1336061387847372830>",
     ":star:", ":egg:", "<a:slots:1336120636635873390>"
-)
-
-_BIRD_EMOJIS: tuple = (
-    ":bird:", ":black_bird:", ":baby_chick:", ":red_square:",
-    ":white_square_button:", ":yellow_square:", ":red_square:",
-    ":white_square_button:", ":yellow_square:", ":black_large_square:"
 )
 
 
@@ -38,9 +34,20 @@ class _Reel(Enum):
         return cls(random.sample(
             population=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             k=1,
-            counts=[17, 33, 10, 10, 15, 9, 5, 1, 37, 30]
+            counts=[20, 33, 10, 10, 15, 9, 5, 1, 30, 25]
         )[0])
-    
+
+
+_PIROTS_EMOJIS: tuple = (
+    ":bird:", ":black_bird:", ":baby_chick:",
+    ":red_square:", ":white_square_button:", ":yellow_square:", ":star2:", ":wing:",
+    ":red_square:", ":white_square_button:", ":yellow_square:", ":star2:", ":wing:",
+    ":black_large_square:", ":rock:"
+)
+
+
+_PIROTS_WEIGHTS: tuple = (27, 30, 33, 9, 2, 7)
+
 
 class _Pirots(Enum):
     RED_BIRD = 1
@@ -49,21 +56,45 @@ class _Pirots(Enum):
     RED_GEM = 4
     BLACK_GEM = 5
     YELLOW_GEM = 6
-    RED_GEM_CLAIMED = 7
-    BLACK_GEM_CLAIMED = 8
-    YELLOW_GEM_CLAIMED = 9
-    EMPTY = 10
+    STAR = 7
+    WING = 8
+    RED_GEM_CLAIMED = 9
+    BLACK_GEM_CLAIMED = 10
+    YELLOW_GEM_CLAIMED = 11
+    STAR_CLAIMED = 12
+    WING_CLAIMED = 13
+    EMPTY = 14
+    ROCK = 15
 
     def to_emoji(self) -> str:
-        return _BIRD_EMOJIS[self.value - 1]
+        return _PIROTS_EMOJIS[self.value - 1]
 
     @classmethod
     def get_random_gem(cls) -> "_Pirots":
-        return cls(random.sample(
-            population=[4, 5, 6],
-            k=1,
-            counts=[27, 33, 30]
-        )[0])
+        return random.choices(
+            population=[cls.RED_GEM, cls.BLACK_GEM, cls.YELLOW_GEM, cls.STAR, cls.WING, cls.ROCK],
+            weights=_PIROTS_WEIGHTS,
+            k=1
+        )[0]
+    
+    @classmethod
+    def get_random_board(cls) -> list[list["_Pirots"]]:
+        random_gems = random.choices(
+            population=[cls.RED_GEM, cls.BLACK_GEM, cls.YELLOW_GEM, cls.STAR, cls.WING, cls.ROCK],
+            weights=_PIROTS_WEIGHTS,
+            k=25
+        )
+
+        random_board = [[random_gems[x*5+y] for x in range(5)] for y in range(5)]
+
+        birds_pos = [(x, y) for x in range(5) for y in range(5)]
+        random.shuffle(birds_pos)
+
+        random_board[birds_pos[0][0]][birds_pos[0][1]] = _Pirots.RED_BIRD
+        random_board[birds_pos[1][0]][birds_pos[1][1]] = _Pirots.BLACK_BIRD
+        random_board[birds_pos[2][0]][birds_pos[2][1]] = _Pirots.YELLOW_BIRD
+
+        return random_board
 
 
 class View(discord.ui.View):
@@ -84,6 +115,9 @@ class View(discord.ui.View):
 
     is_bonus: bool
     is_pirots: bool
+
+    pirots_notification_msg: str
+    pirots_notification_row: int
 
     saved_bonus_spins: int
     saved_bonus_winnings: float
@@ -107,6 +141,9 @@ class View(discord.ui.View):
         self.is_bonus = False
         self.is_pirots = False
 
+        self.pirots_notification_msg = ""
+        self.pirots_notification_row = 0
+
         self.saved_bonus_spins = 0
         self.saved_bonus_winnings = 0.0
 
@@ -117,8 +154,11 @@ class View(discord.ui.View):
 
         if self.is_pirots:
             # 5x5
-            for row in self.pirots_reels:
-                s += "> " + "".join(reel.to_emoji() for reel in row) + "\n"
+            for i, row in enumerate(self.pirots_reels):
+                s += "> " + "".join(reel.to_emoji() for reel in row)
+                if i == self.pirots_notification_row:
+                    s += f"  {self.pirots_notification_msg}"
+                s += "\n"
 
             s += "\n**:pirate_flag: Бонусная игра с птичками!**\n"
 
@@ -141,20 +181,7 @@ class View(discord.ui.View):
         return s
 
     async def pirots_reset_board(self) -> None:
-        # Generate the board
-        new_board = [[_Pirots.EMPTY for _ in range(5)] for _ in range(5)]
-
-        positions = [(x, y) for x in range(5) for y in range(5)]
-        random.shuffle(positions)
-
-        new_board[positions[0][0]][positions[0][1]] = _Pirots.RED_BIRD
-        new_board[positions[1][0]][positions[1][1]] = _Pirots.BLACK_BIRD
-        new_board[positions[2][0]][positions[2][1]] = _Pirots.YELLOW_BIRD
-
-        for x in range(5):
-            for y in range(5):
-                if new_board[x][y] is _Pirots.EMPTY:
-                    new_board[x][y] = _Pirots.get_random_gem()
+        new_board = _Pirots.get_random_board()
 
         # Reveal the board
         self.pirots_reels = [[_Reel.SPINNING for _ in range(5)] for _ in range(5)]
@@ -180,16 +207,35 @@ class View(discord.ui.View):
                     
                     for i in range(1, len(cluster)):
                         gem = cluster[i]
+                        claimed_cell = self.pirots_reels[gem[0]][gem[1]]
                         self.pirots_reels[gem[0]][gem[1]] = cell
 
                         prev_position = cluster[i-1]
                         self.pirots_reels[prev_position[0]][prev_position[1]] = _Pirots.EMPTY
 
-                        self.total_winnings += self.bet * 0.5
-                        self.pirots_winnings += self.bet * 0.5
+                        match claimed_cell:
+                            case _Pirots.STAR_CLAIMED:
+                                self.total_winnings += self.bet * 1/3
+                                self.pirots_winnings += self.bet * 1/3
+                                self.pirots_notification_msg = f"**+{int(self.bet * 1/3)} :coin:**"
+                                self.pirots_notification_row = gem[0]
+                            
+                            case _Pirots.WING_CLAIMED:
+                                self.total_winnings += self.bet
+                                self.pirots_winnings += self.bet
+                                self.pirots_spins += 1
+                                self.pirots_notification_msg = "**+ФРИСПИН**"
+                                self.pirots_notification_row = gem[0]
+
+                            case _:
+                                self.total_winnings += self.bet * 0.125
+                                self.pirots_winnings += self.bet * 0.125
+                        
                         moved = True
 
                         await self.msg.edit(content=str(self), view=self)
+                        self.pirots_notification_msg = ""
+                        self.pirots_notification_row = 0
                         await asyncio.sleep(0.5)
 
         if moved:
@@ -218,9 +264,9 @@ class View(discord.ui.View):
             nx = bird_position[0] + dx
             ny = bird_position[1] + dy
 
-            if (0 <= nx < 5) and (0 <= ny < 5) and (self.pirots_reels[nx][ny] == target_gem):
+            if (0 <= nx < 5) and (0 <= ny < 5) and (self.pirots_reels[nx][ny] in [target_gem, _Pirots.STAR, _Pirots.WING]):
                 cluster.append((nx, ny))
-                self.pirots_reels[nx][ny] = _Pirots(target_gem.value + 3)
+                self.pirots_reels[nx][ny] = _Pirots(self.pirots_reels[nx][ny].value + 5)
                 self.pirots_map_gem_cluster(target_gem, (nx, ny), cluster)
 
         return cluster
@@ -372,7 +418,7 @@ class View(discord.ui.View):
 
         mult: float = 0.0
 
-        mult += cnts[1] * 1/3 - cnts[0] * 1/3 + cnts[8] * 1/3 + cnts[9] * 1/4  # Proverka, skulls, stars, and eggs
+        mult += cnts[1] * 1/3 - cnts[0] * 1/3 + cnts[8] * 1/4 + cnts[9] * 1/4  # Proverka, skulls, stars, and eggs
         mult += 1 if (cnts[2] == 2) else 2.5 if (cnts[2] == 3) else 0  # Cherries
         mult += 1.5 if (cnts[3] == 2) else 3 if (cnts[3] == 3) else 0  # Fungi
         mult += 0.5 if (cnts[4] == 2) else 2.5 if (cnts[4] == 3) else 0  # Graga
@@ -401,68 +447,3 @@ class View(discord.ui.View):
             btn.disabled = True
             await interaction.response.send_message(":prohibited: Недостаточно токенов!", ephemeral=True)
             self.stop()
-
-
-if __name__ == "__main__":
-    print("George Droid Slots Testing Mode Activated")
-
-
-    class View_Test(View):
-        def __init__(self, bet):
-            self.bet = bet
-            self.winnings = 0.0
-            self.spins_left = 1
-            self.bonus_cnt = 0
-            self.pirots_cnt = 0
-
-            while self.spins_left > 0:
-                self.reels = [_Reel.get_random(), _Reel.get_random(), _Reel.SPINNING]
-
-                is_two_stars: bool = self.reels[0] == self.reels[1] == _Reel.STAR
-                is_two_eggs: bool = self.reels[0] == self.reels[1] == _Reel.EGG
-
-                if (is_two_stars or is_two_eggs) and random.random() < 0.4:
-                    self.reels[2] = self.reels[1]
-                else:
-                    self.reels[2] = _Reel.get_random()
-
-                self.winnings += max(round(self.bet * self.calc_multiplier()), 0)
-
-                if self.reels == [_Reel.STAR, _Reel.STAR, _Reel.STAR]:
-                    self.spins_left = 4
-                    self.bonus_cnt += 1
-
-                if self.reels == [_Reel.EGG, _Reel.EGG, _Reel.EGG]:
-                    self.spins_left = 5
-                    self.pirots_cnt += 1
-
-                self.spins_left -= 1
-
-    n = 100000
-    bet = 10000
-    winnings = []
-    total = 0
-    wins_cnt = 0
-    ties_cnt = 0
-    bonus_cnt = 0
-    pirots_cnt = 0
-
-    for _ in range(n):
-        view = View_Test(bet)
-        winnings.append(view.winnings)
-        total += view.winnings
-        if view.winnings > bet:
-            wins_cnt += 1
-        elif view.winnings == bet:
-            ties_cnt += 1
-        if view.bonus_cnt:
-            bonus_cnt += 1
-        if view.pirots_cnt:
-            pirots_cnt += 1
-    winnings.sort()
-    total
-    print(
-        f"for {n} games with a bet of {bet}:\naverage: {total / n}\nmedian: {winnings[n // 2]}\nchance to win: "
-        f"{wins_cnt / n * 100}%\nchance of a tie: {ties_cnt / n * 100}%\nbonus chance: {bonus_cnt / n * 100}%"
-        f"\npirots chance: {pirots_cnt / n * 100}%"
-    )
