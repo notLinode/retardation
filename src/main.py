@@ -170,6 +170,10 @@ async def on_message(message: discord.Message):
 
         case ";coinflip" | ";cf":
             await message.reply(f":coin: {'Орёл' if random() >= 0.5 else 'Решка'}")
+            
+        case ";summon-pig" | ";summon" | "вызвать":
+            if message.content.lower().startswith((";summon-pig", ";summon pig", "вызвать свинью")):  # This is so scuffed, I'm sorry
+                await commands.summon_pig(message)
 
         case ";ping":
             await message.channel.send('pong')
