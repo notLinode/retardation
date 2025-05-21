@@ -624,11 +624,18 @@ async def automessage(message: Message) -> None:
 
     bot_vars.recent_messages.append(message)
 
-    is_mentioned: bool = bot_vars.client.user in message.mentions
+    is_mentioned_by_name: bool = bot_vars.client.user in message.mentions
+
+    is_mentioned_by_role: bool = False
+    for bot_role in message.guild.get_member(bot_vars.client.user.id).roles:
+        if bot_role in message.role_mentions:
+            is_mentioned_by_role = True
 
     regex_match = re.search(r"(?:\s|^)инвалид", message.content.lower())
     is_mentioned_directly: bool = regex_match is not None
     
+    is_mentioned: bool = is_mentioned_by_name or is_mentioned_by_role or is_mentioned_directly
+
     is_time_to_automessage: bool
 
     if bot_vars.setting_message_interval_is_random:
@@ -641,7 +648,7 @@ async def automessage(message: Message) -> None:
         recent_messages_len: int = len(bot_vars.recent_messages)
         is_time_to_automessage = recent_messages_len >= bot_vars.setting_message_interval
 
-    automessage_condition: bool = is_mentioned or is_mentioned_directly or is_time_to_automessage
+    automessage_condition: bool = is_mentioned or is_time_to_automessage
     if automessage_condition and bot_vars.recent_messages:
         async with message.channel.typing():
             automessage: str = await ai.generate_automessage(bot_vars.ai_key, bot_vars)
