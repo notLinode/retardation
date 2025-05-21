@@ -101,7 +101,12 @@ async def generate_automessage(akash_api_key: str, bot_vars: BotVariables) -> st
         prompt += f"            'content': '{content}',"
 
         author_as_member: Member = message.guild.get_member(message.author.id)
-        sender: str = author_as_member.nick if author_as_member.nick else author_as_member.name
+        sender: str
+        if author_as_member is not None and author_as_member.nick is not None:
+            sender = author_as_member.nick
+        else:
+            sender = message.author.name
+
         prompt += f"            'sender': '{sender}',"
 
         prompt += f"            'authorId': {message.author.id}"
