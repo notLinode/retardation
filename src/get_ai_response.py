@@ -1,3 +1,4 @@
+from discord import Member
 import openai
 
 from enum import Enum
@@ -99,7 +100,8 @@ async def generate_automessage(akash_api_key: str, bot_vars: BotVariables) -> st
         content: str = message.content.replace("\"", "\\\"").replace("'", "\\'")
         prompt += f"            'content': '{content}',"
 
-        sender: str = message.author.nick if message.author.nick else message.author.name
+        author_as_member: Member = message.guild.get_member(message.author.id)
+        sender: str = author_as_member.nick if author_as_member.nick else author_as_member.name
         prompt += f"            'sender': '{sender}',"
 
         prompt += f"            'authorId': {message.author.id}"
