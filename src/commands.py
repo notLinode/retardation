@@ -550,7 +550,8 @@ async def summon_pig(message: Message) -> None:
             "https://cdn.discordapp.com/attachments/305699301135351808/1367072510335651880/Domestic_pig_-_Miniature_Pig.jpg?ex=681340fd&is=6811ef7d&hm=67ded954f8c9fd42159ba36d63b19185e5786977ab68a274eea867953595749b&",
             "https://cdn.discordapp.com/attachments/305699301135351808/1367072826976108554/49388993291_7f098f90fb_k-113260129.jpg?ex=68134148&is=6811efc8&hm=d234b7c683638cd508906aaaec4e671560457582d9b8afdc72fd040b89020659&",
             "https://cdn.discordapp.com/attachments/305699301135351808/1367082428136685668/pig-fat-muzzle-funny-wallpaper.jpg?ex=68134a3a&is=6811f8ba&hm=3f7cf7a9f461ea8d139048e96899fa2094c9d232714b8d6ee1e338bcb3f7e2d7&",
-            "https://cdn.discordapp.com/attachments/305699301135351808/1367082519824039956/Red-Wattle-Hog-Facts1.jpg?ex=68134a4f&is=6811f8cf&hm=06354a736fedb904468a3b0335032e571b18ab82c783dd43e7e721d62d57d9b7&"
+            "https://cdn.discordapp.com/attachments/305699301135351808/1367082519824039956/Red-Wattle-Hog-Facts1.jpg?ex=68134a4f&is=6811f8cf&hm=06354a736fedb904468a3b0335032e571b18ab82c783dd43e7e721d62d57d9b7&",
+            "https://cdn.discordapp.com/attachments/1134466669260050474/1260892645744578640/Untitled.png?ex=683acdc8&is=68397c48&hm=8bf64924d80b7d77310531dde4a85e9cac1ecc526ea4d7946a9ba2eba42d2466&"
         ]
 
         pig: str = random.choice(PIGS)
