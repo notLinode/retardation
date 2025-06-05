@@ -130,13 +130,12 @@ async def generate_automessage(akash_api_key: str, bot_vars: BotVariables) -> st
 
         prompt += "    ]\n}\n```\n"
 
-    response: str = await get_response(akash_api_key, prompt)
+    response: str = await get_response(akash_api_key, prompt, "Qwen3-235B-A22B-FP8")
+
+    debug_info: str = str({"prompt": prompt, "response": response})
+    LOGGER.debug(f"An automessage was generated: {debug_info}")
     
-    if response[0] == "\"":
-        # Sometimes the bot surrounds it's messages with quotes, we have to remove them
-        # We don't remove the trailing quotes if there are no leading quotes
-        response = response.strip("\"")
-    
+    response = response.partition("</think>")[2] if "</think>" in response else response
     return response
 
 
