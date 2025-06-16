@@ -13,7 +13,7 @@ from shop_item import ShopItem
 LOGGER = logging.getLogger(__name__)
 
 
-async def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-3-70B-Instruct", timeout: int = 7) -> str:
+async def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-4-Maverick-17B-128E-Instruct-FP8", timeout: int = 7) -> str:
     try:
         client = openai.OpenAI(
             api_key=akash_api_key,
@@ -37,7 +37,7 @@ async def get_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama
         return "🚫 вы даун"
 
 
-def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-3-1-405B-Instruct-FP8", max_response_len: int = 5000):
+def stream_response(akash_api_key: str, prompt: str, model: str = "Meta-Llama-4-Maverick-17B-128E-Instruct-FP8", max_response_len: int = 5000):
     """Yields a response from the selected model. Set `max_response_len` to 0 to make it unlimited."""
     try:
         client = openai.OpenAI(

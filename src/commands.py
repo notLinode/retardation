@@ -30,7 +30,7 @@ async def prompt(message: Message) -> None:
 
         match model.lower():
             case "r1":
-                model = "DeepSeek-R1"
+                model = "DeepSeek-R1-0528"
                 max_response_len: int = 0
                 is_thinking: bool = True
             case "r1dl":
@@ -43,7 +43,7 @@ async def prompt(message: Message) -> None:
                 is_thinking: bool = True
             case _:
                 prompt = model + prompt  # User didn't specify a model, so the first word needs to be put back into the prompt
-                model = "Meta-Llama-3-3-70B-Instruct"
+                model = "Meta-Llama-4-Maverick-17B-128E-Instruct-FP8"
                 max_response_len: int = 5000
                 is_thinking: bool = False
 
