@@ -8,9 +8,9 @@ The bot utilizes LLM's such as Meta's Llama to send messages in Discord channels
 
 The default command prefix is a **semicolon** (`;`). It can only be changed by modifying the source code. A list of most of the bot's commmands can be viewed with `;help`.
 
-The bot has an economy where the money is called **tokens**. Tokens are given to users for texting or they're given hourly when AFK. Tokens can be spent on upgrades, given to other users, or gambled away in blackjack.
+The bot has an economy where the money is called **tokens**. Users can get tokens for texting, or they can earn tokens hourly when AFK. Tokens can be spent on upgrades, given to other users, or gambled away in minigames.
 
-The bot also constantly displays a status with its **health**, **hunger**, and **litterbox fullness**. If the bot is allowed to die by starving to death or by intentionally hurting it, it will refuse to do anything until it is revived. Starving can be disabled with the `;do-tamagotchi` command.
+The bot also constantly displays a status with its **health**, **hunger**, and **litterbox fullness**. If the bot is allowed to die by starving to death or by intentionally hurting it, it will refuse to do anything until it is revived. Starving can be disabled with the `;do-tamagotchi` command, this command does not stop users from intentionally hurting the bot.
 
 ## Setting up
 
